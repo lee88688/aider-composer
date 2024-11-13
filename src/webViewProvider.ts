@@ -406,7 +406,7 @@ class VscodeReactView implements WebviewViewProvider {
       });
   }
 
-  setViewType(viewType: 'chat' | 'setting') {
+  setViewType(viewType: 'chat' | 'setting' | 'history') {
     this.postMessageToWebview({
       id: nanoid(),
       command: 'set-view-type',

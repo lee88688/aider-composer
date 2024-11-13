@@ -55,6 +55,11 @@
         "command": "aider-composer.ConfirmModify",
         "title": "Confirm Modify",
         "icon": "$(check)"
+      },
+      {
+        "command": "aider-composer.HistoryButtonClick",
+        "title": "History",
+        "icon": "$(history)"
       }
     ],
     "menus": {
@@ -65,9 +70,14 @@
           "group": "navigation@1"
         },
         {
-          "command": "aider-composer.SettingButtonClick",
+          "command": "aider-composer.HistoryButtonClick",
           "when": "view == aider-composer.SidebarProvider",
           "group": "navigation@2"
+        },
+        {
+          "command": "aider-composer.SettingButtonClick",
+          "when": "view == aider-composer.SidebarProvider",
+          "group": "navigation@3"
         }
       ],
       "editor/title": [

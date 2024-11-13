@@ -55,6 +55,14 @@ export function activate(context: vscode.ExtensionContext) {
     }),
   );
 
+  // history button click
+  context.subscriptions.push(
+    vscode.commands.registerCommand('aider-composer.HistoryButtonClick', () => {
+      outputChannel.info('History button clicked!');
+      webviewProvider.setViewType('history');
+    }),
+  );
+
   // confirm modify
   context.subscriptions.push(
     vscode.commands.registerCommand(

@@ -28,6 +28,13 @@ type ServerChatPayload = {
 
 type ChatReferenceItemWithReadOnly = ChatReferenceItem & { readonly?: boolean };
 
+type ChatSessionHistory = {
+  id: string;
+  title: string;
+  time: number;
+  data: ChatMessage[];
+};
+
 export const useChatSettingStore = create(
   persist(
     combine(
@@ -52,9 +59,61 @@ export const useChatSettingStore = create(
   ),
 );
 
+export const useChatSessionStore = create(
+  persist(
+    combine(
+      {
+        sessions: [] as ChatSessionHistory[],
+      },
+      (set) => ({
+        setSessions(nextSessions: ChatSessionHistory[]) {
+          set({ sessions: nextSessions });
+        },
+        addSession(id: string, data: ChatMessage[]) {
+          if (!id) {
+            console.error('id is required');
+            return;
+          }
+
+          set((state) => {
+            if (state.sessions.find((s) => s.id === id)) {
+              return {
+                ...state,
+                sessions: state.sessions.map((s) =>
+                  s.id === id ? { ...s, data, time: Date.now() } : s,
+                ),
+              };
+            }
+
+            const title = data[0].text;
+            return {
+              ...state,
+              sessions: [
+                ...state.sessions,
+                { id, title, time: Date.now(), data },
+              ],
+            };
+          });
+        },
+        deleteSession(id: string) {
+          set((state) => ({
+            ...state,
+            sessions: state.sessions.filter((s) => s.id !== id),
+          }));
+        },
+      }),
+    ),
+    {
+      name: 'sessions',
+      storage: persistStorage,
+    },
+  ),
+);
+
 export const useChatStore = create(
   combine(
     {
+      id: nanoid(),
       history: [] as ChatMessage[],
       // current assistant message from server
       current: undefined as ChatAssistantMessage | undefined,
@@ -66,8 +125,12 @@ export const useChatStore = create(
         | undefined,
     },
     (set, get) => ({
-      setHistory(nextHistory: ChatMessage[]) {
-        set({ history: nextHistory });
+      clearChat() {
+        set({
+          id: nanoid(),
+          history: [],
+          current: undefined,
+        });
       },
       setCurrentEditorReference(reference: ChatReferenceItemWithReadOnly) {
         set({ currentEditorReference: reference });
@@ -232,6 +295,10 @@ export const useChatStore = create(
             const history = state.current
               ? [...state.history, state.current]
               : state.history;
+
+            const id = state.id;
+            useChatSessionStore.getState().addSession(id, history);
+
             return {
               ...state,
               history,
@@ -248,11 +315,11 @@ export const useChatStore = create(
         });
 
         eventSource.onerror = (event: SSEvent) => {
-          // todo: 应该处理current，目前只在end事件中处理
+          // todo: should deal with current, currently only deal with end event
           console.log('error', event);
           if ((event.target as SSE | null)?.readyState === EventSource.CLOSED) {
             console.log('EventSource connection closed');
-            // 处理流结束的逻辑
+            // deal with end event
           } else {
             console.error('EventSource error:', event);
           }
@@ -262,3 +329,23 @@ export const useChatStore = create(
     }),
   ),
 );
+
+export async function setChatSession(id: string) {
+  const session = useChatSessionStore
+    .getState()
+    .sessions.find((s) => s.id === id);
+  if (!session) {
+    console.error('session not found');
+    return;
+  }
+
+  const { serverUrl } = useExtensionStore.getState();
+  await fetch(`${serverUrl}/api/chat/session`, {
+    method: 'PUT',
+    body: JSON.stringify(
+      session.data.map((m) => ({ role: m.type, content: m.text })),
+    ),
+  });
+
+  useChatStore.setState({ id, history: session.data, current: undefined });
+}

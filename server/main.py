@@ -251,6 +251,13 @@ def clear():
     manager.coder.cur_messages = []
     return jsonify({})
 
+@app.route('/api/chat/session', methods=['PUT'])
+def set_history():
+    data = request.json
+    manager.coder.done_messages = data
+    manager.coder.cur_messages = []
+    return jsonify({})
+
 @app.route('/api/chat/setting', methods=['POST'])
 def update_setting():
     data = request.json

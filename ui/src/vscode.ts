@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import useExtensionStore from './stores/useExtensionStore';
+import useExtensionStore, { ViewType } from './stores/useExtensionStore';
 import { useChatStore } from './stores/useChatStore';
 import { ChatReferenceItem } from './types';
 
@@ -35,6 +35,7 @@ window.addEventListener('message', (event) => {
   }
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function callCommand(command: string, data: unknown): Promise<any> {
   const id = nanoid();
   vscode.postMessage({
@@ -82,12 +83,12 @@ addCommandEventListener('new-chat', async () => {
     await fetch(`${serverUrl}/api/chat`, {
       method: 'DELETE',
     });
-    useChatStore.setState({ history: [] });
+    useChatStore.getState().clearChat();
   }
 });
 
 addCommandEventListener('set-view-type', ({ data }) => {
-  useExtensionStore.setState({ viewType: data as string });
+  useExtensionStore.setState({ viewType: data as ViewType });
 });
 
 addCommandEventListener('current-editor-changed', ({ data }) => {
