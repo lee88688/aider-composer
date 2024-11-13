@@ -56,3 +56,15 @@ export function getWorkspaceState(data: { key: string }) {
 export function deleteWorkspaceState(data: { key: string }) {
   return callCommand('delete-workspace-state', data);
 }
+
+export function setSecretState(data: { key: string; value: unknown }) {
+  return callCommand('set-secret-state', data);
+}
+
+export function getSecretState(data: { key: string }) {
+  return callCommand('get-secret-state', data);
+}
+
+export function deleteSecretState(data: { key: string }) {
+  return callCommand('delete-secret-state', data);
+}

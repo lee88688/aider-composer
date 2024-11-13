@@ -1,10 +1,13 @@
 import { createJSONStorage, StateStorage } from 'zustand/middleware';
 import {
   deleteGlobalState,
+  deleteSecretState,
   deleteWorkspaceState,
   getGlobalState,
+  getSecretState,
   getWorkspaceState,
   setGlobalState,
+  setSecretState,
   setWorkspaceState,
 } from '../commandApi';
 
@@ -35,3 +38,17 @@ const globalStorage: StateStorage = {
 };
 
 export const persistGlobalStorage = createJSONStorage(() => globalStorage);
+
+const secretStorage: StateStorage = {
+  getItem: (key: string) => {
+    return getSecretState({ key });
+  },
+  setItem: (key: string, value: string) => {
+    return setSecretState({ key, value });
+  },
+  removeItem: (key: string) => {
+    return deleteSecretState({ key });
+  },
+};
+
+export const persistSecretStorage = createJSONStorage(() => secretStorage);

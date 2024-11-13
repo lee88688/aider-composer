@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { combine, persist } from 'zustand/middleware';
 import useExtensionStore from './useExtensionStore';
-import { persistGlobalStorage } from './lib';
+import { persistSecretStorage } from './lib';
 
 export type ChatModelSetting = {
   provider: string;
@@ -51,7 +51,7 @@ const useSettingStore = create(
     ),
     {
       name: 'setting',
-      storage: persistGlobalStorage,
+      storage: persistSecretStorage,
       onRehydrateStorage: () => {
         return (_state, error) => {
           if (error) {

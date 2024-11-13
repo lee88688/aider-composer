@@ -213,6 +213,15 @@ class VscodeReactView implements WebviewViewProvider {
           case 'delete-workspace-state':
             promise = this.deleteWorkspaceState(data);
             break;
+          case 'set-secret-state':
+            promise = this.setSecretState(data);
+            break;
+          case 'get-secret-state':
+            promise = this.getSecretState(data);
+            break;
+          case 'delete-secret-state':
+            promise = this.deleteSecretState(data);
+            break;
           // Add more switch case statements here as more webview message commands
           // are created within the webview context (i.e. inside media/main.js)
         }
@@ -236,6 +245,18 @@ class VscodeReactView implements WebviewViewProvider {
         data: this.serverUrl,
       });
     }
+  }
+
+  private async setSecretState(data: { key: string; value: any }) {
+    return this.context.secrets.store(data.key, data.value);
+  }
+
+  private async getSecretState(data: { key: string }) {
+    return this.context.secrets.get(data.key);
+  }
+
+  private async deleteSecretState(data: { key: string }) {
+    return this.context.secrets.delete(data.key);
   }
 
   private async setWorkspaceState(data: { key: string; value: any }) {
