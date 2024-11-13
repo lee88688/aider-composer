@@ -1,11 +1,13 @@
-export const DiffContentProviderId = 'aider-diff';
+export interface DocsConfig {
+    title: string;
+    startUrl: string;
+    rootUrl: string;
+    faviconUrl?: string;
+}
+
+export const DiffContentProviderId = 'aider-composer-diff';
 
 export interface DiffParams {
-  // file path
-  original: string;
-  // modified content
-  modified: {
     path: string;
     content: string;
-  };
 }
