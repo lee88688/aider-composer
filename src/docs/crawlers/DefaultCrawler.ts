@@ -4,11 +4,11 @@ import { BaseCrawler, PageData } from './BaseCrawler';
 export class DefaultCrawler extends BaseCrawler {
     private visited = new Set<string>();
 
-    async *crawl(maxRequestsPerCrawl = this.MAX_REQUESTS_PER_CRAWL): AsyncGenerator<PageData> {
+    async *crawl(): AsyncGenerator<PageData> {
         const queue: URL[] = [this.startUrl];
         let requestCount = 0;
 
-        while (queue.length > 0 && requestCount < maxRequestsPerCrawl) {
+        while (queue.length > 0 && requestCount < this.maxRequestsPerCrawl) {
             const url = queue.shift()!;
             const urlString = url.toString();
 

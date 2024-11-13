@@ -130,7 +130,8 @@
   "dependencies": {
     "@types/puppeteer": "^5.4.7",
     "nanoid": "^3.3.7",
-    "puppeteer": "^23.8.0"
+    "puppeteer": "^23.8.0",
+    "vectordb": "^0.12.0"
   },
   "release": {
     "branches": [

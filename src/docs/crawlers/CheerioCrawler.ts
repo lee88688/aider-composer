@@ -13,11 +13,11 @@ export class CheerioCrawler extends BaseCrawler {
         '#main',
     ];
 
-    async *crawl(maxRequestsPerCrawl = this.MAX_REQUESTS_PER_CRAWL): AsyncGenerator<PageData> {
+    async *crawl(): AsyncGenerator<PageData> {
         const queue: URL[] = [this.startUrl];
         let requestCount = 0;
 
-        while (queue.length > 0 && requestCount < maxRequestsPerCrawl) {
+        while (queue.length > 0 && requestCount < this.maxRequestsPerCrawl) {
             const url = queue.shift()!;
             const urlString = url.toString();
 

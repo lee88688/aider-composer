@@ -5,17 +5,17 @@ export class ChromiumCrawler extends BaseCrawler {
     private visited = new Set<string>();
     private browser: puppeteer.Browser | null = null;
 
-    async *crawl(maxRequestsPerCrawl = this.MAX_REQUESTS_PER_CRAWL): AsyncGenerator<PageData> {
+    async *crawl(): AsyncGenerator<PageData> {
         try {
             this.browser = await puppeteer.launch({
-                headless: 'new',
+                headless: true,
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
 
             const queue: URL[] = [this.startUrl];
             let requestCount = 0;
 
-            while (queue.length > 0 && requestCount < maxRequestsPerCrawl) {
+            while (queue.length > 0 && requestCount < this.maxRequestsPerCrawl) {
                 const url = queue.shift()!;
                 const urlString = url.toString();
 
