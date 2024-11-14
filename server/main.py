@@ -142,11 +142,10 @@ class ChatSessionManager:
             # update os env
             config = provider_env_map[setting.provider]
             
-            # explicitly handle configs that only need an api key
             if isinstance(config, str):
                 os.environ[config] = setting.api_key
                 
-            # explicitly handle configs that need multiple env vars, like base urls and api keys
+            # explicitly handle configs that need multiple env variables, like base urls and api keys
             elif isinstance(config, dict):
                 for key, value in config.items():
                     if key == 'api_key':
