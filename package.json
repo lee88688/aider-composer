@@ -114,8 +114,8 @@
     "@semantic-release/exec": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@types/mocha": "^10.0.7",
-    "@types/node": "20.x",
-    "@types/vscode": "^1.93.0",
+    "@types/node": "^20.17.6",
+    "@types/vscode": "^1.95.0",
     "@typescript-eslint/eslint-plugin": "^8.3.0",
     "@typescript-eslint/parser": "^8.3.0",
     "@vscode/test-cli": "^0.0.10",
@@ -125,10 +125,13 @@
     "eslint": "^9.9.1",
     "prettier": "^3.3.3",
     "semantic-release": "^24.2.0",
-    "typescript": "^5.5.4"
+    "typescript": "^5.6.3"
   },
   "dependencies": {
-    "nanoid": "^3.3.7"
+    "@types/puppeteer": "^5.4.7",
+    "nanoid": "^3.3.7",
+    "puppeteer": "^23.8.0",
+    "vectordb": "^0.12.0"
   },
   "release": {
     "branches": [

@@ -35,10 +35,12 @@ import ChatFileList from './chatFileList';
 import { List, ListItem } from '../../components/list';
 import ToggleGroup from './ToggleGroup';
 import { useChatStore, useChatSettingStore } from '../../stores/useChatStore';
+import { useDocsStore } from '../../stores/useDocsStore';
 import {
   ChatReferenceItem,
   DiffFormat,
   SerializedChatUserMessageChunk,
+  DocItem,
 } from '../../types';
 import { useDebounceEffect, useMemoizedFn } from 'ahooks';
 import { searchFile, showInfoMessage } from '../../commandApi';
@@ -93,11 +95,6 @@ const Text = (props: RenderLeafProps) => {
   const { attributes, children, leaf } = props;
   return (
     <span
-      // The following is a workaround for a Chromium bug where,
-      // if you have an inline at the end of a block,
-      // clicking the end of a block puts the cursor inside the inline
-      // instead of inside the final {text: ''} node
-      // https://github.com/ianstormtaylor/slate/issues/4704#issuecomment-1006696364
       className={leaf.text === '' ? 'pl-[0.1px]' : undefined}
       {...attributes}
     >
@@ -114,8 +111,6 @@ const insertMention = (editor: Editor, reference: ChatReferenceItem) => {
   };
   editor.insertNode(mention);
 
-  // deal with data-slate-zero-width="z", keep the cursor in the right place
-  // https://github.com/ianstormtaylor/slate/issues/2231
   const point = Editor.after(editor, editor.selection!);
   if (point) {
     Transforms.setSelection(editor, { anchor: point, focus: point });
@@ -125,23 +120,20 @@ const insertMention = (editor: Editor, reference: ChatReferenceItem) => {
   ReactEditor.focus(editor);
 };
 
-// Put this at the start and end of an inline component to work around this Chromium bug:
-// https://bugs.chromium.org/p/chromium/issues/detail?id=1249405
 const InlineChromiumBugfix = () => (
   <span contentEditable={false} style={{ fontSize: 0 }}>
-    {String.fromCodePoint(160) /* Non-breaking space */}
+    {String.fromCodePoint(160)}
   </span>
 );
-
-// const DefaultElement = (props: RenderElementProps) => {
-//   return <p {...props.attributes}>{props.children}</p>;
-// };
 
 const MentionElement = ({
   attributes,
   children,
   element,
 }: RenderElementProps) => {
+  const ref = (element as MentionElement).reference;
+  const displayName = ref.type === 'doc' ? ref.title : ref.name;
+
   return (
     <span
       {...attributes}
@@ -152,11 +144,10 @@ const MentionElement = ({
         margin: '0 1px',
         verticalAlign: 'baseline',
         borderRadius: '4px',
-        // backgroundColor: '#eee',
         fontSize: '0.9em',
       }}
     >
-      <InlineChromiumBugfix />@{(element as MentionElement).reference.name}
+      <InlineChromiumBugfix />@{displayName}
       {children}
       <InlineChromiumBugfix />
     </span>
@@ -164,7 +155,7 @@ const MentionElement = ({
 };
 
 const withMentions = (editor: Editor) => {
-  const { isInline, deleteBackward, isSelectable, isVoid } = editor;
+  const { isInline, isSelectable } = editor;
 
   editor.isInline = (element) => {
     return element.type === 'mention' ? true : isInline(element);
@@ -173,32 +164,6 @@ const withMentions = (editor: Editor) => {
   editor.isSelectable = (element) => {
     return element.type === EditorType.Mention ? false : isSelectable(element);
   };
-
-  // editor.isVoid = (element) => {
-  //   return element.type === EditorType.Mention ? true : isVoid(element);
-  // };
-
-  // editor.deleteBackward = (...args) => {
-  //   const { selection } = editor;
-
-  //   if (selection && Range.isCollapsed(selection)) {
-  //     const [match] = Editor.nodes(editor, {
-  //       match: (n) => n.type === 'mention',
-  //     });
-
-  //     if (match) {
-  //       const [, path] = match;
-  //       const start = Editor.start(editor, path);
-
-  //       if (Range.equals(selection, start)) {
-  //         Transforms.removeNodes(editor, { at: path });
-  //         return;
-  //       }
-  //     }
-  //   }
-
-  //   deleteBackward(...args);
-  // };
 
   return editor;
 };
@@ -213,6 +178,7 @@ const ChatEditor = forwardRef<{ sendChat: () => void }>(
     const currentMode = useRef<'insert' | 'select'>('insert');
 
     const [references, setReferences] = useState<ChatReferenceItem[]>([]);
+    const [mentionType, setMentionType] = useState<'file' | 'docs'>('file');
 
     const renderElement = useCallback((props: RenderElementProps) => {
       switch (props.element.type) {
@@ -230,6 +196,7 @@ const ChatEditor = forwardRef<{ sendChat: () => void }>(
 
     const sendChatMessage = useChatStore((state) => state.sendChatMessage);
     const addChatReference = useChatStore((state) => state.addChatReference);
+    const providers = useDocsStore((state) => state.providers);
 
     useEffect(() => {
       if (target && references.length > 0) {
@@ -270,11 +237,26 @@ const ChatEditor = forwardRef<{ sendChat: () => void }>(
           setReferences((p) => (p.length ? [] : p));
           return;
         }
-        searchFile(search, 10).then((files) => {
-          setReferences(files.map((file) => ({ type: 'file', ...file })));
-        });
+
+        if (mentionType === 'docs') {
+          const matchingDocs: DocItem[] = providers
+            .filter((doc) =>
+              doc.title.toLowerCase().includes(search.toLowerCase())
+            )
+            .map((doc) => ({
+              type: 'doc',
+              name: doc.title,
+              path: doc.startUrl,
+              ...doc,
+            }));
+          setReferences(matchingDocs);
+        } else {
+          searchFile(search, 10).then((files) => {
+            setReferences(files.map((file) => ({ type: 'file', ...file })));
+          });
+        }
       },
-      [search],
+      [search, mentionType],
       { wait: 500 },
     );
 
@@ -311,11 +293,8 @@ const ChatEditor = forwardRef<{ sendChat: () => void }>(
               Transforms.select(editor, target);
               addReference(references[index]);
             } else if (event.shiftKey) {
-              // insert enter
               Transforms.insertText(editor, '\n');
             } else if (currentMode.current === 'insert') {
-              // send message
-              // const content = Editor.string(editor, []);
               sendChat();
             }
             break;
@@ -363,10 +342,8 @@ const ChatEditor = forwardRef<{ sendChat: () => void }>(
             while (searchCount < MAX_SUPPORTED_SEARCH_CHAR) {
               const before = Editor.before(editor, currentPoint);
 
-              // reach the start of the document
               if (!before) break;
 
-              // reach the start of the current line
               if (
                 before.path[before.path.length - 1] !==
                 currentPoint.path[currentPoint.path.length - 1]
@@ -387,10 +364,10 @@ const ChatEditor = forwardRef<{ sendChat: () => void }>(
                   start,
                 );
                 const text = Editor.string(editor, rangeIncludeSpace);
-                const match = text.match(/\s@(\w+)$/);
+                const docsMatch = text.match(/\s@Docs\s*(\w*)$/i);
+                const fileMatch = text.match(/\s@(\w+)$/);
 
-                if (match) {
-                  // exclude space, only start from @
+                if (docsMatch) {
                   const range = Editor.range(editor, before, start);
                   setTarget(range);
                   targetRef.current = {
@@ -399,7 +376,21 @@ const ChatEditor = forwardRef<{ sendChat: () => void }>(
                       return domRange.getBoundingClientRect();
                     },
                   };
-                  setSearch(match[1]);
+                  setMentionType('docs');
+                  setSearch(docsMatch[1] || '');
+                  setIndex(0);
+                  return;
+                } else if (fileMatch) {
+                  const range = Editor.range(editor, before, start);
+                  setTarget(range);
+                  targetRef.current = {
+                    getBoundingClientRect: () => {
+                      const domRange = ReactEditor.toDOMRange(editor, range);
+                      return domRange.getBoundingClientRect();
+                    },
+                  };
+                  setMentionType('file');
+                  setSearch(fileMatch[1]);
                   setIndex(0);
                   return;
                 }
@@ -421,7 +412,7 @@ const ChatEditor = forwardRef<{ sendChat: () => void }>(
           renderLeaf={(props) => <Text {...props} />}
           onKeyDown={onKeyDown}
           onPaste={handlePaste}
-          placeholder="Ask anything, use @ to mention files."
+          placeholder="Ask anything, use @ to mention files or @Docs to reference documentation."
         />
         <Popover.Root open={Boolean(target)}>
           <Popover.Anchor
@@ -442,17 +433,21 @@ const ChatEditor = forwardRef<{ sendChat: () => void }>(
             >
               <List>
                 {references.map((r, i) => {
+                  const key = r.type === 'file' ? r.path : r.startUrl;
+                  const secondaryText = r.type === 'file' ? r.path : r.rootUrl;
+                  const displayName = r.type === 'file' ? r.name : r.title;
+
                   return (
                     <ListItem
-                      key={r.path}
+                      key={key}
                       className={i === index ? 'focus' : ''}
                       style={{ justifyContent: 'space-between' }}
-                      secondaryText={r.path}
+                      secondaryText={secondaryText}
                       onClick={() => {
                         addReference(r);
                       }}
                     >
-                      {r.name}
+                      {displayName}
                     </ListItem>
                   );
                 })}
