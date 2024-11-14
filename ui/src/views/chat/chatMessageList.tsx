@@ -142,7 +142,7 @@ export default function ChatMessageList() {
 
   return (
     <ScrollArea style={{ padding: '1rem', flexGrow: 1 }} disableX>
-      <div style={{ lineHeight: '1.5' }}>
+      <div style={{ lineHeight: '1.6' }}>
         {historyItems}
         {currentItem}
       </div>
