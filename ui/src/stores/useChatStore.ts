@@ -342,6 +342,9 @@ export async function setChatSession(id: string) {
   const { serverUrl } = useExtensionStore.getState();
   await fetch(`${serverUrl}/api/chat/session`, {
     method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify(
       session.data.map((m) => ({ role: m.type, content: m.text })),
     ),
