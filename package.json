@@ -84,7 +84,7 @@
         {
           "command": "aider-composer.ConfirmModify",
           "group": "navigation@1",
-          "when": "isInDiffEditor && resourceScheme =~ /^(aider-diff|file)$/"
+          "when": "isInDiffEditor && resourceScheme == 'aider-diff'"
         }
       ]
     },

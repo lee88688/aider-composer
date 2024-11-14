@@ -84,6 +84,7 @@ export function activate(context: vscode.ExtensionContext) {
           'workbench.action.closeActiveEditor',
         );
 
+        outputChannel.info(`path: ${uri.path} modified content is written`);
         vscode.window.showInformationMessage(
           `path: ${uri.path} modified content is written`,
         );
