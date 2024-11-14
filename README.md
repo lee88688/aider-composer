@@ -27,16 +27,16 @@ because of some limitation or other issues, this extension may not implement all
 
 ## Requirements
 
-This extension use python package `aider.chat` and `flask` to provide background service, so you should install them first.
+This extension use python package `aider-chat` and `flask` to provide background service, so you should install them first.
 
-- install Python
-- install `aider.chat` and `flask` package
+- install Python. you can download from [python.org](https://www.python.org/) or any other ways.
+- install `aider-chat` and `flask` package, use command `pip install aider-chat flask`
 
 ## Extension Settings
 
 This extension contributes the following settings:
 
-- `aider-composer.pythonPath`: Path that includes the Python executable and the `aider.chat`, `flask` package is installed. this is required before you can use this extension. if you not set this, extension will not be activated.
+- `aider-composer.pythonPath`: Directory that includes the Python executable (not the Python executable path) and the `aider.chat`, `flask` package is installed. this is required before you can use this extension. if you not set this, extension will not be activated.
 
 ---
 

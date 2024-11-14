@@ -141,11 +141,17 @@ class ChatSessionManager:
             model = Model(setting.model)
             # update os env
             config = provider_env_map[setting.provider]
+            
             if isinstance(config, str):
                 os.environ[config] = setting.api_key
+                
+            # explicitly handle configs that need multiple env variables, like base urls and api keys
             elif isinstance(config, dict):
                 for key, value in config.items():
-                    os.environ[key] = value
+                    if key == 'api_key':
+                        os.environ[value] = setting.api_key
+                    elif key == 'base_url':
+                        os.environ[value] = setting.base_url or ''
             self.coder = Coder.create(from_coder=self.coder, main_model=model)
     
     def update_coder(self):
