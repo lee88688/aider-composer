@@ -148,10 +148,7 @@ class ChatSessionManager:
             # explicitly handle configs that need multiple env variables, like base urls and api keys
             elif isinstance(config, dict):
                 for key, value in config.items():
-                    if key == 'api_key':
-                        os.environ[value] = setting.api_key
-                    elif key == 'base_url':
-                        os.environ[value] = setting.base_url or ''
+                    os.environ[value] = getattr(setting, key)
             self.coder = Coder.create(from_coder=self.coder, main_model=model)
     
     def update_coder(self):

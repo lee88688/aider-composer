@@ -59,13 +59,8 @@ export default function Setting() {
     initialValues: setting,
     validationSchema: schema,
     onSubmit: async (values) => {
-      const model = settingMap[values.provider].model;
-      const v = { ...values };
-      if (isFunction(model)) {
-        v.model = model(v.model);
-      }
-      console.log(v);
-      await setSetting(v);
+      console.log(values);
+      await setSetting(values);
       setViewType('chat');
     },
   });

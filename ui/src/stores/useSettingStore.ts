@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { combine, persist } from 'zustand/middleware';
 import useExtensionStore from './useExtensionStore';
 import { persistSecretStorage } from './lib';
+import { settingMap } from '../views/setting/config';
 
 export type ChatModelSetting = {
   provider: string;
@@ -12,6 +13,13 @@ export type ChatModelSetting = {
 
 export async function apiSetting(setting: ChatModelSetting) {
   const { serverUrl } = useExtensionStore.getState();
+
+  const m = settingMap[setting.provider].model;
+  let model = setting.model;
+  if (typeof m === 'function') {
+    model = m(model);
+  }
+
   return fetch(`${serverUrl}/api/chat/setting`, {
     method: 'POST',
     headers: {
@@ -19,7 +27,7 @@ export async function apiSetting(setting: ChatModelSetting) {
     },
     body: JSON.stringify({
       provider: setting.provider,
-      model: setting.model,
+      model,
       api_key: setting.apiKey,
       base_url: setting.baseUrl,
     }),
