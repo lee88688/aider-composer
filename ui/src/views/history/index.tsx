@@ -4,37 +4,53 @@ import { List, ListItem } from '../../components/list';
 import { setChatSession, useChatSessionStore } from '../../stores/useChatStore';
 import ScrollArea from '../../components/scrollArea';
 import useExtensionStore from '../../stores/useExtensionStore';
+import { css } from '@emotion/css';
+
+const historyStyle = css({
+  padding: '12px',
+  display: 'flex',
+  flexDirection: 'column',
+  height: '100%',
+
+  '.header': {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+
+  '.title': {
+    margin: '10px 0',
+    fontSize: 'calc(var(--vscode-font-size) * 1.5)',
+  },
+
+  '.listHeader': {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  '.listBody': {
+    whiteSpace: 'pre-wrap',
+    lineHeight: '1.5',
+    maxHeight: '6em',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    position: 'relative',
+    wordBreak: 'break-word',
+  },
+});
 
 export default function History() {
   const sessions = useChatSessionStore((state) => state.sessions);
   const deleteChatSession = useChatSessionStore((state) => state.deleteSession);
 
   return (
-    <div
-      style={{
-        padding: '12px',
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <h1
-          style={{
-            margin: '10px 0',
-            fontSize: 'calc(var(--vscode-font-size) * 1.5)',
-          }}
-        >
-          History
-        </h1>
+    <div className={historyStyle}>
+      <div className="header">
+        <h1 className="title">History</h1>
         <VSCodeButton
           onClick={() => useExtensionStore.setState({ viewType: 'chat' })}
         >
@@ -45,7 +61,7 @@ export default function History() {
         <List>
           {sessions.map((session) => (
             <ListItem
-              style={{ position: 'relative' }}
+              style={{ position: 'relative', marginBottom: '10px' }}
               key={session.id}
               onClick={() => {
                 setChatSession(session.id).then(() => {
@@ -53,14 +69,7 @@ export default function History() {
                 });
               }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
+              <div className="listHeader">
                 {new Date(session.time).toLocaleString()}
                 <VSCodeButton
                   appearance="icon"
@@ -72,7 +81,7 @@ export default function History() {
                   <Trash2 size={16} />
                 </VSCodeButton>
               </div>
-              {session.title}
+              <div className="listBody">{session.title}</div>
             </ListItem>
           ))}
         </List>
