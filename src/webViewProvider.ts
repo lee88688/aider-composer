@@ -354,12 +354,22 @@ class VscodeReactView implements WebviewViewProvider {
       });
 
       const name = path.basename(data.path);
-      // 打开 diff 编辑器
+
+      // check if there is already a second column
+      const hasSecondColumn = vscode.window.tabGroups.all.length > 1;
+
+      // open diff editor
       await vscode.commands.executeCommand(
         'vscode.diff',
         originalUri,
         modifiedUri,
         `${name} ${isNewFile ? 'Created' : 'Modified'}`,
+        {
+          viewColumn: hasSecondColumn
+            ? vscode.ViewColumn.Two
+            : vscode.ViewColumn.Beside,
+          preview: false,
+        },
       );
     } catch (error) {
       this.outputChannel.error(`Error opening diff: ${error}`);
