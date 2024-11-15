@@ -164,16 +164,15 @@ class ChatSessionManager:
             fnames=(item.fs_path for item in self.reference_list if not item.readonly),
             read_only_fnames=(item.fs_path for item in self.reference_list if item.readonly),
         )
-    
+
     def chat(self, data: ChatSessionData):
         need_update_coder = False
         data.reference_list.sort(key=lambda x: x.fs_path)
 
-        if data.chat_type != self.chat_type:
+        if data.chat_type != self.chat_type or data.diff_format != self.diff_format:
             need_update_coder = True
             self.chat_type = data.chat_type
-            if data.diff_format != self.diff_format:
-                self.diff_format = data.diff_format
+            self.diff_format = data.diff_format
         if data.reference_list != self.reference_list:
             need_update_coder = True
             self.reference_list = data.reference_list
