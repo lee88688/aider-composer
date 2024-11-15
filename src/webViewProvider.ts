@@ -355,9 +355,6 @@ class VscodeReactView implements WebviewViewProvider {
 
       const name = path.basename(data.path);
 
-      // check if there is already a second column
-      const hasSecondColumn = vscode.window.tabGroups.all.length > 1;
-
       // open diff editor
       await vscode.commands.executeCommand(
         'vscode.diff',
@@ -365,9 +362,7 @@ class VscodeReactView implements WebviewViewProvider {
         modifiedUri,
         `${name} ${isNewFile ? 'Created' : 'Modified'}`,
         {
-          viewColumn: hasSecondColumn
-            ? vscode.ViewColumn.Two
-            : vscode.ViewColumn.Beside,
+          viewColumn: vscode.ViewColumn.Two,
           preview: false,
         },
       );
