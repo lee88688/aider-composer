@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Literal
+from typing import Dict, List, Optional, Literal, Any
 from flask import Flask, jsonify, request, Response
 from aider.models import Model
 from aider.coders import Coder
@@ -6,6 +6,7 @@ from aider.io import InputOutput
 from dataclasses import dataclass, asdict
 import os
 import json
+from threading import Event
 
 @dataclass
 class ChatSetting:
@@ -114,6 +115,7 @@ class ChatSessionManager:
     diff_format: str
     reference_list: List[ChatSessionReference]
     setting: Optional[ChatSetting] = None
+    confirm_ask_result: Optional[Any] = None
 
     def __init__(self):
         model = Model('gpt-4o')
@@ -140,6 +142,8 @@ class ChatSessionManager:
         self.chat_type = 'ask'
         self.diff_format = 'diff'
         self.reference_list = []
+
+        self.confirm_ask_event = Event()
 
     def update_model(self, setting: ChatSetting):
         if self.setting != setting:
@@ -181,7 +185,13 @@ class ChatSessionManager:
             self.update_coder()
         
         yield from self.coder.run_stream(data.message)
+    
+    def confirm_ask(self):
+        self.confirm_ask_event.clear()
+        self.confirm_ask_event.wait()
 
+    def confirm_ask_reply(self):
+        self.confirm_ask_event.set()
 
 class CORS:
     def __init__(self, app):
@@ -272,6 +282,18 @@ def update_setting():
     setting = ChatSetting(**data)
 
     manager.update_model(setting)
+    return jsonify({})
+
+@app.route('/api/chat/confirm/ask', methods=['POST'])
+def confirm_ask():
+    manager.confirm_ask()
+    return jsonify(manager.confirm_ask_result)
+
+@app.route('/api/chat/confirm/reply', methods=['POST'])
+def confirm_reply():
+    data = request.json
+    manager.confirm_ask_result = data
+    manager.confirm_ask_reply()
     return jsonify({})
 
 if __name__ == '__main__':
