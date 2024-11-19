@@ -60,6 +60,20 @@
         "command": "aider-composer.HistoryButtonClick",
         "title": "History",
         "icon": "$(history)"
+      },
+      {
+        "command": "aider-composer.AcceptChange",
+        "title": "Accept Change",
+        "icon": "$(check)"
+      },
+      {
+        "command": "aider-composer.RejectChange",
+        "title": "Reject Change",
+        "icon": "$(x)"
+      },
+      {
+        "command": "aider-composer.Test",
+        "title": "aider composer test"
       }
     ],
     "menus": {
@@ -113,6 +127,7 @@
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/exec": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
+    "@types/diff": "^6.0.0",
     "@types/mocha": "^10.0.7",
     "@types/node": "20.x",
     "@types/vscode": "^1.93.0",
@@ -128,6 +143,7 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
+    "diff": "^7.0.0",
     "nanoid": "^3.3.7"
   },
   "release": {

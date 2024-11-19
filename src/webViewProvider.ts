@@ -15,6 +15,7 @@ import { getUri } from './utils/getUri';
 import { getNonce } from './utils/getNonce';
 import { DiffContentProviderId, DiffParams } from './types';
 import { isProductionMode } from './utils/isProductionMode';
+import { DiffViewManager } from './diffView';
 
 class VscodeReactView implements WebviewViewProvider {
   public static readonly viewType = 'aider-composer.SidebarProvider';
@@ -33,6 +34,7 @@ class VscodeReactView implements WebviewViewProvider {
   constructor(
     private readonly context: vscode.ExtensionContext,
     private outputChannel: vscode.LogOutputChannel,
+    private diffManager: DiffViewManager,
   ) {
     this.setupPromise = new Promise((resolve) => {
       this.setupResolve = () => {

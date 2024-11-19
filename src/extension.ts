@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import VscodeReactView from './webViewProvider';
 import { DiffContentProviderId } from './types';
 import AiderChatService from './aiderChatService';
+import { InlineDiffViewManager } from './diffView/InlineDiff';
+import { DiffEditorViewManager } from './diffView/diffEditor';
 
 let outputChannel: vscode.LogOutputChannel;
 
@@ -20,14 +22,48 @@ export function activate(context: vscode.ExtensionContext) {
   });
   outputChannel.info('Extension "aider-composer" is now active!');
 
-  const webviewProvider = new VscodeReactView(context, outputChannel);
+  // inline diff view manager
+  const inlineDiffViewManager = new InlineDiffViewManager(
+    context,
+    outputChannel,
+  );
+  context.subscriptions.push(inlineDiffViewManager);
 
+  // diff editor diff manager
+  const diffEditorDiffManager = new DiffEditorViewManager(
+    context,
+    outputChannel,
+  );
+  context.subscriptions.push(diffEditorDiffManager);
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('aider-composer.Test', () => {
+      outputChannel.info('Test command executed!');
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        return;
+      }
+
+      inlineDiffViewManager.openDiffView({
+        path: editor.document.uri.fsPath,
+        content: editor.document.getText(),
+      });
+    }),
+  );
+
+  // webview provider
+  const webviewProvider = new VscodeReactView(
+    context,
+    outputChannel,
+    inlineDiffViewManager,
+  );
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       VscodeReactView.viewType,
       webviewProvider,
       { webviewOptions: { retainContextWhenHidden: true } },
     ),
+    webviewProvider,
   );
 
   // diff content provider
