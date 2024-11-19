@@ -5,16 +5,14 @@ import LineEditor from '../utils/lineEditor';
 
 type RemovedChange = {
   type: 'removed';
-  originalLine: number;
-  modifiedLine: number;
+  line: number;
   count: number;
   value: string;
 };
 
 type AddedChange = {
   type: 'added';
-  originalLine: number;
-  modifiedLine: number;
+  line: number;
   count: number;
   value: string;
 };
@@ -53,25 +51,24 @@ export class InlineDiffViewManager
   ) {
     super();
 
-    // fixme
-    // current only support all code in the editor
-    // do not support decoration in multiple lines
     this.deletionDecorationType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: new vscode.ThemeColor(
-        'diffEditor.removedTextBackground',
-      ),
+      // backgroundColor: new vscode.ThemeColor(
+      //   'diffEditor.removedLineBackground',
+      // ),
+      backgroundColor: '#3e1c26',
       isWholeLine: true,
-      after: {
-        margin: '0 0 0 1em',
-        textDecoration: 'line-through',
-      },
+      // after: {
+      //   margin: '0 0 0 1em',
+      //   textDecoration: 'line-through',
+      // },
     });
 
     this.insertionDecorationType = vscode.window.createTextEditorDecorationType(
       {
-        backgroundColor: new vscode.ThemeColor(
-          'diffEditor.insertedTextBackground',
-        ),
+        // backgroundColor: new vscode.ThemeColor(
+        //   'diffEditor.insertedLineBackground',
+        // ),
+        backgroundColor: '#1c3422',
         isWholeLine: true,
       },
     );
@@ -79,25 +76,6 @@ export class InlineDiffViewManager
     this.disposables.push(
       this.deletionDecorationType,
       this.insertionDecorationType,
-
-      vscode.workspace.onDidChangeTextDocument((event) => {
-        const uri = event.document.uri.toString();
-        if (!this.fileChangeMap.has(uri)) {
-          return;
-        }
-
-        const editor = vscode.window.activeTextEditor;
-        if (!editor || editor.document.uri.toString() !== uri) {
-          return;
-        }
-
-        const changes = event.contentChanges;
-        if (changes.length === 0) {
-          return;
-        }
-
-        this.updateDiffChange(editor);
-      }),
 
       vscode.workspace.onDidCloseTextDocument((doc) => {
         if (doc.uri.scheme === 'file') {
@@ -130,6 +108,17 @@ export class InlineDiffViewManager
           this.rejectChange(uri, change);
         },
       ),
+
+      // 添加活动编辑器变化的监听
+      vscode.window.onDidChangeActiveTextEditor((editor) => {
+        if (editor && editor.document.uri.scheme === 'file') {
+          const uri = editor.document.uri.toString();
+          const fileChange = this.fileChangeMap.get(uri);
+          if (fileChange) {
+            this.drawChanges(editor, fileChange);
+          }
+        }
+      }),
     );
   }
 
@@ -144,11 +133,11 @@ export class InlineDiffViewManager
 
     const codeLenses: vscode.CodeLens[] = [];
 
-    for (const change of fileChange.changes) {
+    for (let i = 0; i < fileChange.changes.length; i++) {
+      const change = fileChange.changes[i];
+
       const line =
-        change.type === 'modified'
-          ? change.removed.modifiedLine
-          : change.modifiedLine;
+        change.type === 'modified' ? change.removed.line : change.line;
 
       const range = new vscode.Range(
         new vscode.Position(line, 0),
@@ -159,12 +148,12 @@ export class InlineDiffViewManager
         new vscode.CodeLens(range, {
           title: 'Accept',
           command: 'aider-composer.AcceptChange',
-          arguments: [document.uri, change],
+          arguments: [document.uri.toString(), i],
         }),
         new vscode.CodeLens(range, {
           title: 'Reject',
           command: 'aider-composer.RejectChange',
-          arguments: [document.uri, change],
+          arguments: [document.uri.toString(), i],
         }),
       );
     }
@@ -172,196 +161,166 @@ export class InlineDiffViewManager
     return codeLenses;
   }
 
-  private acceptChange(uri: string, change: Change) {
-    this.outputChannel.debug(`Accept change: ${uri}, ${change.type}`);
-
-    const editor = vscode.window.activeTextEditor;
-    if (!editor || editor.document.uri.toString() !== uri) {
-      return;
-    }
-
-    const fileChange = this.fileChangeMap.get(uri);
-    if (!fileChange) {
-      return;
-    }
-
-    if (change.type === 'removed') {
-      fileChange.originalEditor.delete(change.originalLine, change.count);
-    } else if (change.type === 'added') {
-      fileChange.originalEditor.add(change.modifiedLine, change.value);
-    } else {
-      // add is below the delete, change add don't change line number of delete part
-      fileChange.originalEditor.add(
-        change.added.modifiedLine,
-        change.added.value,
-      );
-      fileChange.originalEditor.delete(
-        change.removed.modifiedLine,
-        change.removed.count,
-      );
-    }
-    this.updateDiffChange(editor);
-  }
-
-  private rejectChange(uri: string, change: Change) {
-    this.outputChannel.debug(`Reject change: ${uri}, ${change.type}`);
-
-    const editor = vscode.window.activeTextEditor;
-    if (!editor || editor.document.uri.toString() !== uri) {
-      return;
-    }
-
-    const fileChange = this.fileChangeMap.get(uri);
-    if (!fileChange) {
-      return;
-    }
-
-    if (change.type === 'removed') {
-      editor.edit((edit) => {
-        const startPos = new vscode.Position(change.modifiedLine, 0);
-        // end line start with beginning which will not delete this line
-        const endPos = new vscode.Position(
-          change.modifiedLine + change.count,
-          0,
-        );
-
-        const range = new vscode.Range(startPos, endPos);
-        edit.replace(range, change.value);
-      });
-    } else if (change.type === 'added') {
-      editor.edit((edit) => {
-        const startPos = new vscode.Position(change.modifiedLine, 0);
-        // end line start with beginning which will not delete this line
-        const endPos = new vscode.Position(
-          change.modifiedLine + change.count,
-          0,
-        );
-
-        const range = new vscode.Range(startPos, endPos);
-        edit.delete(range);
-      });
-    } else if (change.type === 'modified') {
-      editor.edit((edit) => {
-        const startPos = new vscode.Position(change.removed.modifiedLine, 0);
-        const endPos = new vscode.Position(
-          change.added.modifiedLine + change.added.count,
-          0,
-        );
-
-        const range = new vscode.Range(startPos, endPos);
-        edit.replace(range, change.removed.value);
-      });
-    }
-
-    this.updateDiffChange(editor);
-  }
-
-  private updateDiffChange(editor: vscode.TextEditor) {
-    const uri = editor.document.uri.toString();
-    const fileChange = this.fileChangeMap.get(uri);
-    if (!fileChange) {
-      return;
-    }
-
-    const currentContent = editor.document.getText();
-
-    const differences = diffLines(
-      fileChange.originalEditor.current,
-      currentContent,
-    );
-
-    let modifiedLineNumber = 0;
-    let originalLineNumber = 0;
-    const deletions: vscode.DecorationOptions[] = [];
-    const insertions: vscode.DecorationOptions[] = [];
-
-    const changes: Change[] = [];
-    let lastRemoved: RemovedChange | undefined;
-
-    for (const part of differences) {
-      let currentChange: Change | undefined;
-
-      if (part.removed) {
-        const range = new vscode.Range(
-          new vscode.Position(modifiedLineNumber, 0),
-          new vscode.Position(modifiedLineNumber, 0),
-        );
-        deletions.push({
-          range,
-          renderOptions: {
-            after: {
-              contentText: part.value.trimEnd(),
-            },
-          },
-        });
-
-        lastRemoved = {
-          type: 'removed',
-          originalLine: originalLineNumber,
-          modifiedLine: modifiedLineNumber,
-          count: part.count!,
-          value: part.value,
-        };
-        // the last removed part should not wait for the next added part
-        if (part === differences[differences.length - 1]) {
-          currentChange = lastRemoved;
-        }
-      } else if (part.added) {
-        const range = new vscode.Range(
-          new vscode.Position(modifiedLineNumber, 0),
-          new vscode.Position(modifiedLineNumber + part.count!, 0),
-        );
-        insertions.push({ range });
-
-        const added: AddedChange = {
-          type: 'added',
-          originalLine: originalLineNumber,
-          modifiedLine: modifiedLineNumber,
-          count: part.count!,
-          value: part.value,
-        };
-        if (lastRemoved) {
-          currentChange = {
-            type: 'modified',
-            removed: lastRemoved,
-            added,
-          };
-          lastRemoved = undefined;
+  private drawChanges(
+    editor: vscode.TextEditor,
+    fileChange: { changes: Change[] },
+    index?: number,
+    count?: number,
+  ) {
+    // if has index and count, it means we need to delete a change
+    if (index !== undefined && count !== undefined) {
+      for (let i = index + 1; i < fileChange.changes.length; i++) {
+        const change = fileChange.changes[i];
+        if (change.type === 'modified') {
+          change.removed.line -= count;
+          change.added.line -= count;
         } else {
-          currentChange = added;
+          change.line -= count;
         }
-      } else if (lastRemoved) {
-        currentChange = lastRemoved;
-        lastRemoved = undefined;
       }
+      fileChange.changes.splice(index, 1);
+    }
 
-      if (currentChange) {
-        changes.push(currentChange);
-      }
-
-      if (!part.removed) {
-        modifiedLineNumber += part.count!;
-      }
-
-      if (!part.added) {
-        originalLineNumber += part.count!;
+    // update decorations from changes
+    let deletions: vscode.DecorationOptions[] = [];
+    let insertions: vscode.DecorationOptions[] = [];
+    for (const change of fileChange.changes) {
+      if (change.type === 'removed') {
+        deletions.push({
+          range: new vscode.Range(
+            new vscode.Position(change.line, 0),
+            new vscode.Position(change.line + change.count - 1, 0),
+          ),
+        });
+      } else if (change.type === 'added') {
+        insertions.push({
+          range: new vscode.Range(
+            new vscode.Position(change.line, 0),
+            new vscode.Position(change.line + change.count - 1, 0),
+          ),
+        });
+      } else {
+        deletions.push({
+          range: new vscode.Range(
+            new vscode.Position(change.removed.line, 0),
+            new vscode.Position(
+              change.removed.line + change.removed.count - 1,
+              0,
+            ),
+          ),
+        });
+        insertions.push({
+          range: new vscode.Range(
+            new vscode.Position(change.added.line, 0),
+            new vscode.Position(change.added.line + change.added.count - 1, 0),
+          ),
+        });
       }
     }
 
     editor.setDecorations(this.deletionDecorationType, deletions);
     editor.setDecorations(this.insertionDecorationType, insertions);
 
-    this.fileChangeMap.set(uri, {
-      ...fileChange,
-      changes,
-    });
-
     this._onDidChangeCodeLenses.fire();
+  }
 
-    // when there is no change, remove the file change
-    if (changes.length === 0) {
-      this.fileChangeMap.delete(uri);
+  private async acceptChange(uri: string, index: number) {
+    this.outputChannel.debug(`Accept change: ${uri}, ${index}`);
+
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.uri.toString() !== uri) {
+      return;
     }
+
+    const fileChange = this.fileChangeMap.get(uri);
+    if (!fileChange) {
+      return;
+    }
+
+    const change = fileChange.changes[index];
+
+    let range: vscode.Range;
+    let value = '';
+    let count = 0;
+    if (change.type === 'removed') {
+      range = new vscode.Range(
+        new vscode.Position(change.line, 0),
+        new vscode.Position(change.line + change.count, 0),
+      );
+      count = change.count;
+    } else if (change.type === 'added') {
+      // range = new vscode.Range(
+      //   new vscode.Position(change.line, 0),
+      //   new vscode.Position(change.line + change.count, 0),
+      // );
+      // value = change.value;
+      // change is already extracted
+      count = 0;
+    } else {
+      // add is below the delete, change add don't change line number of delete part
+      range = new vscode.Range(
+        new vscode.Position(change.removed.line, 0),
+        new vscode.Position(change.added.line + change.added.count, 0),
+      );
+      value = change.added.value;
+      count = change.removed.count;
+    }
+
+    if (count !== 0) {
+      await editor.edit((edit) => {
+        edit.replace(range, value);
+      });
+    }
+
+    this.drawChanges(editor, fileChange, index, count);
+  }
+
+  private async rejectChange(uri: string, index: number) {
+    this.outputChannel.debug(`Reject change: ${uri}, ${index}`);
+
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.uri.toString() !== uri) {
+      return;
+    }
+
+    const fileChange = this.fileChangeMap.get(uri);
+    if (!fileChange) {
+      return;
+    }
+
+    const change = fileChange.changes[index];
+
+    let range: vscode.Range;
+    let value = '';
+    let count = 0;
+    if (change.type === 'removed') {
+      // range = new vscode.Range(
+      //   new vscode.Position(change.line, 0),
+      //   new vscode.Position(change.line + change.count, 0),
+      // );
+      count = 0;
+    } else if (change.type === 'added') {
+      range = new vscode.Range(
+        new vscode.Position(change.line, 0),
+        new vscode.Position(change.line + change.count, 0),
+      );
+      count = change.count;
+    } else if (change.type === 'modified') {
+      range = new vscode.Range(
+        new vscode.Position(change.removed.line, 0),
+        new vscode.Position(change.added.line + change.added.count, 0),
+      );
+      value = change.removed.value;
+      count = change.added.count;
+    }
+
+    if (count !== 0) {
+      await editor.edit((edit) => {
+        edit.replace(range, value);
+      });
+    }
+
+    this.drawChanges(editor, fileChange, index, count);
   }
 
   async openDiffView(data: { path: string; content: string }): Promise<void> {
@@ -376,23 +335,80 @@ export class InlineDiffViewManager
         vscode.EndOfLine.CRLF === editor.document.eol ? '\r\n' : '\n';
       const modifiedContent = data.content.replace(/\r?\n/g, lineEol);
 
-      const originalContent = editor.document.getText();
-
       const uri = editor.document.uri.toString();
 
-      this.fileChangeMap.set(uri, {
-        originalContent: originalContent,
-        originalEditor: new LineEditor(originalContent, lineEol),
-        changes: [],
-      });
+      const currentContent = editor.document.getText();
+
+      const differences = diffLines(currentContent, modifiedContent);
+
+      let lineNumber = 0;
+
+      // combine original and modified content
+      let combineContent = '';
+
+      const changes: Change[] = [];
+      let lastRemoved: RemovedChange | undefined;
+
+      for (const part of differences) {
+        let currentChange: Change | undefined;
+
+        if (part.removed) {
+          lastRemoved = {
+            type: 'removed',
+            line: lineNumber,
+            count: part.count!,
+            value: part.value,
+          };
+          // the last removed part should not wait for the next added part
+          if (part === differences[differences.length - 1]) {
+            currentChange = lastRemoved;
+          }
+        } else if (part.added) {
+          const added: AddedChange = {
+            type: 'added',
+            line: lineNumber,
+            count: part.count!,
+            value: part.value,
+          };
+          if (lastRemoved) {
+            currentChange = {
+              type: 'modified',
+              removed: lastRemoved,
+              added,
+            };
+            lastRemoved = undefined;
+          } else {
+            currentChange = added;
+          }
+        } else if (lastRemoved) {
+          currentChange = lastRemoved;
+          lastRemoved = undefined;
+        }
+
+        if (currentChange) {
+          changes.push(currentChange);
+        }
+
+        combineContent += part.value;
+        lineNumber += part.count!;
+      }
 
       const edit = new vscode.WorkspaceEdit();
       const range = new vscode.Range(
         new vscode.Position(0, 0),
         new vscode.Position(editor.document.lineCount, 0),
       );
-      edit.replace(editor.document.uri, range, modifiedContent);
+      edit.replace(editor.document.uri, range, combineContent);
       await vscode.workspace.applyEdit(edit);
+
+      const fileChange = {
+        originalContent: modifiedContent,
+        originalEditor: new LineEditor(modifiedContent, lineEol),
+        changes: changes,
+      };
+      this.fileChangeMap.set(uri, fileChange);
+
+      this.drawChanges(editor, fileChange);
 
       this.outputChannel.debug(`Applied inline diff for ${data.path}`);
     } catch (error) {
