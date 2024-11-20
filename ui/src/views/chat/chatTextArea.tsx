@@ -119,7 +119,19 @@ const insertMention = (editor: Editor, reference: ChatReferenceItem) => {
   const point = Editor.after(editor, editor.selection!);
   if (point) {
     Transforms.setSelection(editor, { anchor: point, focus: point });
-    editor.insertText(' ');
+
+    // Check if there's already a space after the mention
+    const after = Editor.after(editor, point);
+    if (after) {
+      const range = Editor.range(editor, point, after);
+      const text = Editor.string(editor, range);
+      if (text !== ' ') {
+        editor.insertText(' ');
+      }
+    } else {
+      // If we're at the end of the document, add a space
+      editor.insertText(' ');
+    }
   }
 
   ReactEditor.focus(editor);
