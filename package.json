@@ -74,6 +74,16 @@
       {
         "command": "aider-composer.Test",
         "title": "aider composer test"
+      },
+      {
+        "command": "aider-composer.AcceptAllChanges",
+        "title": "Accept All Changes",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "aider-composer.RejectAllChanges",
+        "title": "Reject All Changes",
+        "icon": "$(close-all)"
       }
     ],
     "menus": {
@@ -98,6 +108,16 @@
         {
           "command": "aider-composer.ConfirmModify",
           "group": "navigation@1",
+          "when": "isInDiffEditor && resourceScheme == 'aider-diff'"
+        },
+        {
+          "command": "aider-composer.AcceptAllChanges",
+          "group": "navigation@2",
+          "when": "isInDiffEditor && resourceScheme == 'aider-diff'"
+        },
+        {
+          "command": "aider-composer.RejectAllChanges",
+          "group": "navigation@3",
           "when": "isInDiffEditor && resourceScheme == 'aider-diff'"
         }
       ]

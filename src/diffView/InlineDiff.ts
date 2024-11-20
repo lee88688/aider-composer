@@ -40,7 +40,7 @@ export class InlineDiffViewManager
     string,
     {
       originalContent: string;
-      originalEditor: LineEditor;
+      modifiedContent: string;
       changes: Change[];
     }
   >();
@@ -52,22 +52,12 @@ export class InlineDiffViewManager
     super();
 
     this.deletionDecorationType = vscode.window.createTextEditorDecorationType({
-      // backgroundColor: new vscode.ThemeColor(
-      //   'diffEditor.removedLineBackground',
-      // ),
       backgroundColor: '#3e1c26',
       isWholeLine: true,
-      // after: {
-      //   margin: '0 0 0 1em',
-      //   textDecoration: 'line-through',
-      // },
     });
 
     this.insertionDecorationType = vscode.window.createTextEditorDecorationType(
       {
-        // backgroundColor: new vscode.ThemeColor(
-        //   'diffEditor.insertedLineBackground',
-        // ),
         backgroundColor: '#1c3422',
         isWholeLine: true,
       },
@@ -106,6 +96,21 @@ export class InlineDiffViewManager
         'aider-composer.RejectChange',
         (uri, change) => {
           this.rejectChange(uri, change);
+        },
+      ),
+
+      // accept all command
+      vscode.commands.registerCommand(
+        'aider-composer.AcceptAllChanges',
+        (uri) => {
+          this.acceptAllChanges(uri);
+        },
+      ),
+      // reject all command
+      vscode.commands.registerCommand(
+        'aider-composer.RejectAllChanges',
+        (uri) => {
+          this.rejectAllChanges(uri);
         },
       ),
 
@@ -249,11 +254,6 @@ export class InlineDiffViewManager
       );
       count = change.count;
     } else if (change.type === 'added') {
-      // range = new vscode.Range(
-      //   new vscode.Position(change.line, 0),
-      //   new vscode.Position(change.line + change.count, 0),
-      // );
-      // value = change.value;
       // change is already extracted
       count = 0;
     } else {
@@ -294,10 +294,6 @@ export class InlineDiffViewManager
     let value = '';
     let count = 0;
     if (change.type === 'removed') {
-      // range = new vscode.Range(
-      //   new vscode.Position(change.line, 0),
-      //   new vscode.Position(change.line + change.count, 0),
-      // );
       count = 0;
     } else if (change.type === 'added') {
       range = new vscode.Range(
@@ -323,13 +319,49 @@ export class InlineDiffViewManager
     this.drawChanges(editor, fileChange, index, count);
   }
 
+  private async acceptAllChanges(uri: vscode.Uri) {
+    this.outputChannel.debug(`Accept all changes: ${uri}`);
+
+    const fileChange = this.fileChangeMap.get(uri.toString());
+    if (!fileChange) {
+      return;
+    }
+
+    const editor = await vscode.window.showTextDocument(uri);
+    const edit = new vscode.WorkspaceEdit();
+    const range = new vscode.Range(
+      new vscode.Position(0, 0),
+      new vscode.Position(editor.document.lineCount, 0),
+    );
+    edit.replace(editor.document.uri, range, fileChange.modifiedContent);
+    await vscode.workspace.applyEdit(edit);
+  }
+
+  private async rejectAllChanges(uri: vscode.Uri) {
+    this.outputChannel.debug(`Reject all changes: ${uri}`);
+
+    const fileChange = this.fileChangeMap.get(uri.toString());
+    if (!fileChange) {
+      return;
+    }
+
+    const editor = await vscode.window.showTextDocument(uri);
+    const edit = new vscode.WorkspaceEdit();
+    const range = new vscode.Range(
+      new vscode.Position(0, 0),
+      new vscode.Position(editor.document.lineCount, 0),
+    );
+    edit.replace(editor.document.uri, range, fileChange.originalContent);
+    await vscode.workspace.applyEdit(edit);
+  }
+
   async openDiffView(data: { path: string; content: string }): Promise<void> {
     try {
-      let editor = vscode.window.activeTextEditor;
-      if (!editor || editor.document.uri.fsPath !== data.path) {
-        const document = await vscode.workspace.openTextDocument(data.path);
-        editor = await vscode.window.showTextDocument(document);
-      }
+      const document = await vscode.workspace.openTextDocument(data.path);
+      const editor = await vscode.window.showTextDocument(document, {
+        preview: false,
+        preserveFocus: true,
+      });
 
       const lineEol =
         vscode.EndOfLine.CRLF === editor.document.eol ? '\r\n' : '\n';
@@ -402,8 +434,8 @@ export class InlineDiffViewManager
       await vscode.workspace.applyEdit(edit);
 
       const fileChange = {
-        originalContent: modifiedContent,
-        originalEditor: new LineEditor(modifiedContent, lineEol),
+        originalContent: currentContent,
+        modifiedContent: modifiedContent,
         changes: changes,
       };
       this.fileChangeMap.set(uri, fileChange);
@@ -412,7 +444,7 @@ export class InlineDiffViewManager
 
       this.outputChannel.debug(`Applied inline diff for ${data.path}`);
     } catch (error) {
-      this.outputChannel.appendLine(`Error applying inline diff: ${error}`);
+      this.outputChannel.error(`Error applying inline diff: ${error}`);
       throw error;
     }
   }
