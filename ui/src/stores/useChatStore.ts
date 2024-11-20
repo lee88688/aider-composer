@@ -310,6 +310,46 @@ export const useChatStore = create(
           });
         };
 
+        eventSource.addEventListener('reflected', (event: { data: string }) => {
+          const reflectedMessage = JSON.parse(event.data) as {
+            message: string;
+          };
+          // reflected message is a user message
+          set((state) => {
+            const history = state.current
+              ? [...state.history, state.current]
+              : [...state.history];
+            history.push({
+              type: 'user',
+              text: reflectedMessage.message,
+              displayText: reflectedMessage.message,
+              id: nanoid(),
+              reflected: true,
+              referenceList: state.chatReferenceList,
+            });
+
+            const id = state.id;
+            useChatSessionStore.getState().addSession(id, history);
+
+            // create new assistant message for next round
+            return {
+              ...state,
+              history,
+              current: {
+                id: nanoid(),
+                text: '',
+                type: 'assistant',
+              },
+            };
+          });
+          logToOutput('info', `reflected message: ${reflectedMessage.message}`);
+        });
+
+        eventSource.addEventListener('log', (event: { data: string }) => {
+          const logMessage = JSON.parse(event.data) as { message: string };
+          logToOutput('info', `server log: ${logMessage.message}`);
+        });
+
         eventSource.addEventListener('end', () => {
           end();
           eventSource.close();

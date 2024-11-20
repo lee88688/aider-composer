@@ -19,6 +19,18 @@ import './codeTheme.scss';
 const messageItemStyle = css({
   marginBottom: '16px',
   // whiteSpace: 'pre-wrap',
+  '& h1': {
+    fontSize: '1.25rem',
+    fontWeight: 'bold',
+    lineHeight: '1.25',
+    margin: '0.5rem 0',
+  },
+  '& h2': {
+    fontSize: '1.25rem',
+    fontWeight: 'bold',
+    lineHeight: '1.25',
+    margin: '0.5rem 0',
+  },
   '& pre': {
     overflow: 'auto hidden',
     width: '100%',
@@ -32,6 +44,9 @@ const messageItemStyle = css({
       fontFamily: 'var(--vscode-editor-font-family)',
     },
   },
+  '& .hljs': {
+    backgroundColor: 'transparent',
+  },
 });
 
 function ChatUserMessageItem(props: { message: ChatUserMessage }) {
@@ -39,6 +54,7 @@ function ChatUserMessageItem(props: { message: ChatUserMessage }) {
 
   return (
     <div
+      className={messageItemStyle}
       style={{
         backgroundColor: 'var(--vscode-input-background)',
         borderRadius: '4px',
@@ -47,7 +63,11 @@ function ChatUserMessageItem(props: { message: ChatUserMessage }) {
         whiteSpace: 'pre-wrap',
       }}
     >
-      <Markdown>{message.displayText}</Markdown>
+      {message.reflected ? (
+        message.displayText
+      ) : (
+        <Markdown>{message.displayText}</Markdown>
+      )}
     </div>
   );
 }
@@ -73,12 +93,17 @@ const code: MarkdownComponents['code'] = (props) => {
   );
 };
 
-function ChatAssistantMessageItem(props: { message: ChatAssistantMessage }) {
-  const { message } = props;
+function ChatAssistantMessageItem(props: {
+  message: ChatAssistantMessage;
+  useComponents?: boolean;
+}) {
+  const { message, useComponents = true } = props;
 
   return (
     <div className={messageItemStyle}>
-      <Markdown components={{ code }}>{message.text}</Markdown>
+      <Markdown components={useComponents ? { code } : undefined}>
+        {message.text}
+      </Markdown>
       {message.usage && (
         <div
           style={{
@@ -97,13 +122,19 @@ function ChatAssistantMessageItem(props: { message: ChatAssistantMessage }) {
 
 const ChatMessageItem = memo(function ChatMessageItem(props: {
   message: ChatMessage;
+  useComponents?: boolean;
 }) {
-  const { message } = props;
+  const { message, useComponents } = props;
 
   if (message.type === 'user') {
     return <ChatUserMessageItem message={message} />;
   } else if (message.type === 'assistant') {
-    return <ChatAssistantMessageItem message={message} />;
+    return (
+      <ChatAssistantMessageItem
+        message={message}
+        useComponents={useComponents}
+      />
+    );
   }
 
   return null;
@@ -125,7 +156,14 @@ export default function ChatMessageList() {
   let currentItem: React.ReactNode;
   if (current) {
     if (current.text) {
-      currentItem = <ChatMessageItem key={current.id} message={current} />;
+      currentItem = (
+        // current may change very fast, so use components may cause performance issue
+        <ChatMessageItem
+          key={current.id}
+          message={current}
+          useComponents={false}
+        />
+      );
     } else {
       currentItem = (
         <div>
