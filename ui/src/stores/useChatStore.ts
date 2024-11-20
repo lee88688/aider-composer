@@ -290,7 +290,10 @@ export const useChatStore = create(
           }
         });
 
-        eventSource.addEventListener('end', () => {
+        const end = () => {
+          if (!get().current) {
+            return;
+          }
           set((state) => {
             const history = state.current
               ? [...state.history, state.current]
@@ -305,6 +308,10 @@ export const useChatStore = create(
               current: undefined,
             };
           });
+        };
+
+        eventSource.addEventListener('end', () => {
+          end();
           eventSource.close();
         });
 
@@ -323,6 +330,7 @@ export const useChatStore = create(
           } else {
             console.error('EventSource error:', event);
           }
+          end();
           eventSource.close();
         };
       },
