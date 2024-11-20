@@ -21,6 +21,20 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "keybindings": [
+      {
+        "command": "aider-composer.AcceptAllChanges",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a",
+        "when": "aider-composer.hasChanges"
+      },
+      {
+        "command": "aider-composer.RejectAllChanges",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "aider-composer.hasChanges"
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -45,6 +59,18 @@
         "command": "aider-composer.AddButtonClick",
         "title": "New",
         "icon": "$(add)"
+      },
+      {
+        "command": "aider-composer.AcceptAllChanges",
+        "title": "Accept All Changes",
+        "icon": "$(check-all)",
+        "enablement": "aider-composer.hasChanges"
+      },
+      {
+        "command": "aider-composer.RejectAllChanges",
+        "title": "Reject All Changes",
+        "icon": "$(close-all)",
+        "enablement": "aider-composer.hasChanges"
       },
       {
         "command": "aider-composer.SettingButtonClick",
@@ -108,17 +134,17 @@
         {
           "command": "aider-composer.ConfirmModify",
           "group": "navigation@1",
-          "when": "isInDiffEditor && resourceScheme == 'aider-diff'"
+          "when": "isInDiffEditor && resourceScheme == 'aider-diff' && aider-composer.hasChanges"
         },
         {
           "command": "aider-composer.AcceptAllChanges",
           "group": "navigation@2",
-          "when": "isInDiffEditor && resourceScheme == 'aider-diff'"
+          "when": "aider-composer.hasChanges"
         },
         {
           "command": "aider-composer.RejectAllChanges",
           "group": "navigation@3",
-          "when": "isInDiffEditor && resourceScheme == 'aider-diff'"
+          "when": "aider-composer.hasChanges"
         }
       ]
     },

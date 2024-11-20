@@ -51,6 +51,13 @@ export class InlineDiffViewManager
   ) {
     super();
 
+    // Set initial context value
+    vscode.commands.executeCommand(
+      'setContext',
+      'aider-composer.hasChanges',
+      false,
+    );
+
     this.deletionDecorationType = vscode.window.createTextEditorDecorationType({
       backgroundColor: '#3e1c26',
       isWholeLine: true,
@@ -119,9 +126,21 @@ export class InlineDiffViewManager
         if (editor && editor.document.uri.scheme === 'file') {
           const uri = editor.document.uri.toString();
           const fileChange = this.fileChangeMap.get(uri);
+          // 设置 context 基于当前编辑器是否有更改
+          vscode.commands.executeCommand(
+            'setContext',
+            'aider-composer.hasChanges',
+            fileChange !== undefined && fileChange.changes.length > 0,
+          );
           if (fileChange) {
             this.drawChanges(editor, fileChange);
           }
+        } else {
+          vscode.commands.executeCommand(
+            'setContext',
+            'aider-composer.hasChanges',
+            false,
+          );
         }
       }),
     );
@@ -273,6 +292,15 @@ export class InlineDiffViewManager
     }
 
     this.drawChanges(editor, fileChange, index, count);
+
+    // Check if there are any remaining changes
+    if (fileChange.changes.length === 0) {
+      vscode.commands.executeCommand(
+        'setContext',
+        'aider-composer.hasChanges',
+        false,
+      );
+    }
   }
 
   private async rejectChange(uri: string, index: number) {
@@ -439,6 +467,13 @@ export class InlineDiffViewManager
         changes: changes,
       };
       this.fileChangeMap.set(uri, fileChange);
+
+      // Update context when changes exist
+      vscode.commands.executeCommand(
+        'setContext',
+        'aider-composer.hasChanges',
+        true,
+      );
 
       this.drawChanges(editor, fileChange);
 
