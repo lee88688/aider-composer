@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
+import * as fsPromises from 'fs/promises';
 import VscodeReactView from './webViewProvider';
 import { DiffContentProviderId } from './types';
 import AiderChatService from './aiderChatService';
 import { InlineDiffViewManager } from './diffView/InlineDiff';
 import { DiffEditorViewManager } from './diffView/diffEditor';
+import { isProductionMode } from './utils/isProductionMode';
 
 let outputChannel: vscode.LogOutputChannel;
 
@@ -35,21 +37,6 @@ export function activate(context: vscode.ExtensionContext) {
     outputChannel,
   );
   context.subscriptions.push(diffEditorDiffManager);
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand('aider-composer.Test', () => {
-      outputChannel.info('Test command executed!');
-      const editor = vscode.window.activeTextEditor;
-      if (!editor) {
-        return;
-      }
-
-      inlineDiffViewManager.openDiffView({
-        path: editor.document.uri.fsPath,
-        content: editor.document.getText(),
-      });
-    }),
-  );
 
   // webview provider
   const webviewProvider = new VscodeReactView(
@@ -173,6 +160,25 @@ export function activate(context: vscode.ExtensionContext) {
   aiderChatService.start();
 
   outputChannel.show();
+
+  if (isProductionMode(context)) {
+    context.subscriptions.push(
+      vscode.commands.registerCommand('aider-composer.Test', async () => {
+        outputChannel.info('Test command executed!');
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+          return;
+        }
+
+        const content = await fsPromises.readFile('', 'utf-8');
+
+        inlineDiffViewManager.openDiffView({
+          path: '',
+          content: content,
+        });
+      }),
+    );
+  }
 }
 
 export function deactivate() {
