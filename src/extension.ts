@@ -9,13 +9,6 @@ import { isProductionMode } from './utils/isProductionMode';
 
 let outputChannel: vscode.LogOutputChannel;
 
-// 添加一个新的 TextDocumentContentProvider 类
-class DiffContentProvider implements vscode.TextDocumentContentProvider {
-  provideTextDocumentContent(uri: vscode.Uri): string {
-    return Buffer.from(uri.query, 'base64').toString('utf-8');
-  }
-}
-
 let aiderChatService: AiderChatService | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
@@ -53,15 +46,6 @@ export function activate(context: vscode.ExtensionContext) {
     webviewProvider,
   );
 
-  // diff content provider
-  const diffProvider = new DiffContentProvider();
-  const providerRegistration =
-    vscode.workspace.registerTextDocumentContentProvider(
-      DiffContentProviderId,
-      diffProvider,
-    );
-  context.subscriptions.push(providerRegistration);
-
   // add button click
   context.subscriptions.push(
     vscode.commands.registerCommand('aider-composer.AddButtonClick', () => {
@@ -84,35 +68,6 @@ export function activate(context: vscode.ExtensionContext) {
       outputChannel.info('History button clicked!');
       webviewProvider.setViewType('history');
     }),
-  );
-
-  // confirm modify
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      'aider-composer.ConfirmModify',
-      async (uri: vscode.Uri, group: unknown) => {
-        outputChannel.info(`ConfirmModify: ${uri.path}`);
-
-        const modifiedContent = Buffer.from(uri.query, 'base64');
-        const fileUri = vscode.Uri.file(uri.path);
-
-        try {
-          await vscode.workspace.fs.writeFile(fileUri, modifiedContent);
-        } catch (error) {
-          vscode.window.showErrorMessage(`Error writing file: ${error}`);
-          outputChannel.error(`Error writing file: ${error}`);
-        }
-
-        await vscode.commands.executeCommand(
-          'workbench.action.closeActiveEditor',
-        );
-
-        outputChannel.info(`path: ${uri.path} modified content is written`);
-        vscode.window.showInformationMessage(
-          `path: ${uri.path} modified content is written`,
-        );
-      },
-    ),
   );
 
   // current editor changed
@@ -161,7 +116,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   outputChannel.show();
 
-  if (isProductionMode(context)) {
+  if (!isProductionMode(context)) {
     context.subscriptions.push(
       vscode.commands.registerCommand('aider-composer.Test', async () => {
         outputChannel.info('Test command executed!');
