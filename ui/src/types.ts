@@ -8,6 +8,7 @@ export interface ChatUserMessage {
   text: string;
   displayText: string;
   referenceList: ChatReferenceItem[];
+  reflected?: boolean;
 }
 
 export interface ChatAssistantMessage {

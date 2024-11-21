@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/lee88688/aider-composer/compare/v1.1.5...v1.2.0) (2024-11-21)
+
+
+### Features
+
+* add diff format reflected message support ([#16](https://github.com/lee88688/aider-composer/issues/16)) ([746f46f](https://github.com/lee88688/aider-composer/commit/746f46f4a928431490f089b270379e587fc3bce2))
+
 ## [1.1.5](https://github.com/lee88688/aider-composer/compare/v1.1.4...v1.1.5) (2024-11-15)
 
 

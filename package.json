@@ -3,7 +3,7 @@
   "publisher": "lee2py",
   "displayName": "Aider Composer",
   "description": "Seamless integration of Aider with VSCode",
-  "version": "1.1.5",
+  "version": "1.2.0",
   "icon": "resources/icon.png",
   "license": "Apache-2.0",
   "repository": {
