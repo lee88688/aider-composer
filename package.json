@@ -155,6 +155,11 @@
           "type": "string",
           "default": "",
           "description": "Python path which python executable is in and aider-chat package is installed"
+        },
+        "aider-composer.inlineDiff.enable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable inline diff in the editor(preview), restart vscode after changing"
         }
       }
     }

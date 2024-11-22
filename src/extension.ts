@@ -6,6 +6,7 @@ import AiderChatService from './aiderChatService';
 import { InlineDiffViewManager } from './diffView/InlineDiff';
 import { DiffEditorViewManager } from './diffView/diffEditor';
 import { isProductionMode } from './utils/isProductionMode';
+import { DiffViewManager } from './diffView';
 
 let outputChannel: vscode.LogOutputChannel;
 
@@ -17,25 +18,34 @@ export function activate(context: vscode.ExtensionContext) {
   });
   outputChannel.info('Extension "aider-composer" is now active!');
 
+  const inlineDiffEnable = vscode.workspace
+    .getConfiguration('aider-composer')
+    .get('inlineDiff.enable');
+
+  let diffViewManager: DiffViewManager;
+  if (inlineDiffEnable) {
   // inline diff view manager
   const inlineDiffViewManager = new InlineDiffViewManager(
     context,
     outputChannel,
   );
   context.subscriptions.push(inlineDiffViewManager);
-
+    diffViewManager = inlineDiffViewManager;
+  } else {
   // diff editor diff manager
   const diffEditorDiffManager = new DiffEditorViewManager(
     context,
     outputChannel,
   );
   context.subscriptions.push(diffEditorDiffManager);
+    diffViewManager = diffEditorDiffManager;
+  }
 
   // webview provider
   const webviewProvider = new VscodeReactView(
     context,
     outputChannel,
-    inlineDiffViewManager,
+    diffViewManager,
   );
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
