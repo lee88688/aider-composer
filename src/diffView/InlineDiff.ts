@@ -94,19 +94,22 @@ export class InlineDiffViewManager
       this._onDidChangeCodeLenses,
 
       // accept command
-      vscode.commands.registerCommand(
-        'aider-composer.AcceptChange',
-        (uri, change) => {
-          this.acceptChange(uri, change);
-        },
-      ),
+      vscode.commands.registerCommand('aider-composer.AcceptChange', () => {
+        const uri = vscode.window.activeTextEditor?.document.uri;
+        if (!uri) {
+          return;
+        }
+        this.acceptChange(uri.toString());
+      }),
+
       // reject command
-      vscode.commands.registerCommand(
-        'aider-composer.RejectChange',
-        (uri, change) => {
-          this.rejectChange(uri, change);
-        },
-      ),
+      vscode.commands.registerCommand('aider-composer.RejectChange', () => {
+        const uri = vscode.window.activeTextEditor?.document.uri;
+        if (!uri) {
+          return;
+        }
+        this.rejectChange(uri.toString());
+      }),
 
       // accept all command
       vscode.commands.registerCommand(
@@ -250,8 +253,35 @@ export class InlineDiffViewManager
     this._onDidChangeCodeLenses.fire();
   }
 
-  private async acceptChange(uri: string, index: number) {
-    this.outputChannel.debug(`Accept change: ${uri}, ${index}`);
+  private getChangeIndex(
+    editor: vscode.TextEditor,
+    fileChange: { changes: Change[] },
+  ): number {
+    // get change index from cursor position
+    const position = editor.selection.active;
+    const line = position.line;
+
+    for (let i = 0; i < fileChange.changes.length; i++) {
+      const change = fileChange.changes[i];
+      if (change.type === 'added' || change.type === 'removed') {
+        if (line >= change.line && line < change.line + change.count) {
+          return i;
+        }
+      } else {
+        if (
+          line >= change.removed.line &&
+          line < change.removed.line + change.removed.count + change.added.count
+        ) {
+          return i;
+        }
+      }
+    }
+
+    return -1;
+  }
+
+  private async acceptChange(uri: string, i?: number) {
+    this.outputChannel.debug(`Accept change: ${uri}, ${i}`);
 
     const editor = vscode.window.activeTextEditor;
     if (!editor || editor.document.uri.toString() !== uri) {
@@ -261,6 +291,16 @@ export class InlineDiffViewManager
     const fileChange = this.fileChangeMap.get(uri);
     if (!fileChange) {
       return;
+    }
+
+    let index: number;
+    if (typeof i === 'number') {
+      index = i;
+    } else {
+      index = this.getChangeIndex(editor, fileChange);
+      if (index === -1) {
+        return;
+      }
     }
 
     const change = fileChange.changes[index];
@@ -307,8 +347,8 @@ export class InlineDiffViewManager
     }
   }
 
-  private async rejectChange(uri: string, index: number) {
-    this.outputChannel.debug(`Reject change: ${uri}, ${index}`);
+  private async rejectChange(uri: string, i?: number) {
+    this.outputChannel.debug(`Reject change: ${uri}, ${i}`);
 
     const editor = vscode.window.activeTextEditor;
     if (!editor || editor.document.uri.toString() !== uri) {
@@ -318,6 +358,16 @@ export class InlineDiffViewManager
     const fileChange = this.fileChangeMap.get(uri);
     if (!fileChange) {
       return;
+    }
+
+    let index: number;
+    if (typeof i === 'number') {
+      index = i;
+    } else {
+      index = this.getChangeIndex(editor, fileChange);
+      if (index === -1) {
+        return;
+      }
     }
 
     const change = fileChange.changes[index];

@@ -24,20 +24,20 @@ export function activate(context: vscode.ExtensionContext) {
 
   let diffViewManager: DiffViewManager;
   if (inlineDiffEnable) {
-  // inline diff view manager
-  const inlineDiffViewManager = new InlineDiffViewManager(
-    context,
-    outputChannel,
-  );
-  context.subscriptions.push(inlineDiffViewManager);
+    // inline diff view manager
+    const inlineDiffViewManager = new InlineDiffViewManager(
+      context,
+      outputChannel,
+    );
+    context.subscriptions.push(inlineDiffViewManager);
     diffViewManager = inlineDiffViewManager;
   } else {
-  // diff editor diff manager
-  const diffEditorDiffManager = new DiffEditorViewManager(
-    context,
-    outputChannel,
-  );
-  context.subscriptions.push(diffEditorDiffManager);
+    // diff editor diff manager
+    const diffEditorDiffManager = new DiffEditorViewManager(
+      context,
+      outputChannel,
+    );
+    context.subscriptions.push(diffEditorDiffManager);
     diffViewManager = diffEditorDiffManager;
   }
 

@@ -134,7 +134,7 @@
         {
           "command": "aider-composer.ConfirmModify",
           "group": "navigation@1",
-          "when": "isInDiffEditor && resourceScheme == 'aider-diff' && aider-composer.hasChanges"
+          "when": "isInDiffEditor && resourceScheme == 'aider-diff'"
         },
         {
           "command": "aider-composer.AcceptAllChanges",
