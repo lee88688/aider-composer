@@ -167,7 +167,7 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "cross-env NODE_ENV=development && tsc -watch -p ./",
+    "watch": "cross-env NODE_ENV=development tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
     "test": "vscode-test",

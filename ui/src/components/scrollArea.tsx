@@ -63,10 +63,10 @@ const ScrollArea = forwardRef<
       'style' | 'className'
     >
   >
->((props) => {
-  const { children, className, disableX, ...other } = props;
+>(({ children, className, disableX, ...other }, ref) => {
   return (
     <ScrollAreaPrimitive.Root
+      ref={ref}
       className={clsx(scrollAreaRootCss, className)}
       {...other}
     >

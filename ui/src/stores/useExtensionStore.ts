@@ -8,14 +8,13 @@ const useExtensionStore = create(
     {
       isStarted: false,
       viewType: 'welcome' as ViewType,
-      serverUrl:
-        import.meta.env.NODE_ENV === 'development'
-          ? 'http://localhost:5000'
-          : '',
+      serverUrl: '',
       errorMessage: '',
     },
     (set) => ({
       setViewType: (viewType: ViewType) => set({ viewType }),
+      setServerUrl: (url: string) => set({ serverUrl: url, isStarted: true }),
+      setErrorMessage: (message: string) => set({ errorMessage: message }),
     }),
   ),
 );

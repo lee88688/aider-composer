@@ -12,7 +12,10 @@ export type ChatModelSetting = {
 };
 
 export async function apiSetting(setting: ChatModelSetting) {
-  const { serverUrl } = useExtensionStore.getState();
+  const { serverUrl, setErrorMessage } = useExtensionStore.getState();
+  if (!serverUrl) {
+    throw new Error('Server URL not set');
+  }
 
   const m = settingMap[setting.provider].model;
   let model = setting.model;
@@ -20,18 +23,30 @@ export async function apiSetting(setting: ChatModelSetting) {
     model = m(model);
   }
 
-  return fetch(`${serverUrl}/api/chat/setting`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      provider: setting.provider,
-      model,
-      api_key: setting.apiKey,
-      base_url: setting.baseUrl,
-    }),
-  });
+  try {
+    const response = await fetch(`${serverUrl}/api/chat/setting`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        provider: setting.provider,
+        model,
+        api_key: setting.apiKey,
+        base_url: setting.baseUrl,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update settings: ${response.statusText}`);
+    }
+
+    return response;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to update settings';
+    setErrorMessage(message);
+    throw error;
+  }
 }
 
 let hydratedResolve: () => void;

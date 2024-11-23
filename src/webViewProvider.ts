@@ -83,24 +83,19 @@ class VscodeReactView implements WebviewViewProvider {
     const localPort = '5173';
     const localServerUrl = `localhost:${localPort}`;
 
-    // The CSS file from the React build output
-    const stylesUri = getUri(webview, this.context.extensionUri, [
-      'dist-ui',
-      'assets',
-      'index.css',
-    ]);
+    // CSS file handling - don't try to load CSS in dev mode as it's handled by Vite
+    const styleTag = isProductionMode(this.context)
+      ? `<link rel="stylesheet" type="text/css" href="${getUri(webview, this.context.extensionUri, ['dist-ui', 'assets', 'index.css'])}">`
+      : '';
 
-    let scriptUri;
     const isProd = isProductionMode(this.context);
-    if (isProd) {
-      scriptUri = getUri(webview, this.context.extensionUri, [
-        'dist-ui',
-        'assets',
-        'index.js',
-      ]);
-    } else {
-      scriptUri = `http://${localServerUrl}/${file}`;
-    }
+    const scriptUri = isProd
+      ? getUri(webview, this.context.extensionUri, [
+          'dist-ui',
+          'assets',
+          'index.js',
+        ])
+      : `http://${localServerUrl}/${file}`;
 
     const nonce = getNonce();
 
@@ -118,20 +113,10 @@ class VscodeReactView implements WebviewViewProvider {
 
     const csp = [
       `default-src 'none';`,
-      `script-src 'unsafe-eval' https://* ${
-        isProd
-          ? `'nonce-${nonce}'`
-          : // 这里的hash是计算的什么代码的hash？
-            // : `http://${localServerUrl} http://0.0.0.0:${localPort} '${reactRefreshHash}'`
-            `http://${localServerUrl} http://0.0.0.0:${localPort} 'unsafe-inline'`
-      }`,
-      `style-src ${webview.cspSource} 'self' 'unsafe-inline' https://*`,
+      `script-src 'unsafe-eval' 'unsafe-inline' http://${localServerUrl} http://localhost:* https://* ${isProd ? `'nonce-${nonce}'` : ''}`,
+      `style-src ${webview.cspSource} 'unsafe-inline' http://${localServerUrl} https://*`,
       `font-src ${webview.cspSource}`,
-      `connect-src https://* ${
-        isProd
-          ? `http://127.0.0.1:*`
-          : `ws://${localServerUrl} http://localhost:*  http://127.0.0.1:*`
-      }`,
+      `connect-src ws://${localServerUrl} http://${localServerUrl} http://localhost:* http://127.0.0.1:* https://*`,
     ];
 
     return /*html*/ `<!DOCTYPE html>
@@ -142,7 +127,7 @@ class VscodeReactView implements WebviewViewProvider {
             '; ',
           )}">
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <link rel="stylesheet" type="text/css" href="${stylesUri}">
+          ${styleTag}
           <title>VSCode React Starter</title>
         </head>
         <body>

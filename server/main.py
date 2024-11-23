@@ -262,15 +262,32 @@ class CORS:
 
     def init_app(self, app):
         app.after_request(self.add_cors_headers)
-
+        
     def add_cors_headers(self, response):
         response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, OPTIONS'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
         return response
 
 app = Flask(__name__)
 CORS(app)
+
+# Add OPTIONS handler for preflight requests
+@app.route('/api/chat/setting', methods=['OPTIONS'])
+def setting_options():
+    return '', 204
+
+@app.route('/api/chat/confirm/ask', methods=['OPTIONS'])
+def confirm_ask_options():
+    return '', 204
+
+@app.route('/api/chat/confirm/reply', methods=['OPTIONS'])
+def confirm_reply_options():
+    return '', 204
+
+@app.route('/api/chat/session', methods=['OPTIONS'])
+def session_options():
+    return '', 204
 
 manager = ChatSessionManager()
 

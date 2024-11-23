@@ -21,18 +21,21 @@ export default class AiderChatService {
   async start() {
     this.outputChannel.info('Starting aider-chat service...');
 
-    if (!isProductionMode(this.context)) {
-      this.port = 5000;
-      this.onStarted();
-      return;
-    }
-
     const config = vscode.workspace.getConfiguration('aider-composer');
     const pythonPath = config.get('pythonPath') as string;
     const pythonPathFile = path.join(
       pythonPath,
       process.platform === 'win32' ? 'python.exe' : 'python',
     );
+
+    const randomPort = Math.floor(Math.random() * 10000) + 10000;
+    this.port = !isProductionMode(this.context) ? 5000 : randomPort;
+
+    if (!isProductionMode(this.context)) {
+      this.onStarted();
+      return;
+    }
+
     if (!pythonPath) {
       this.outputChannel.info(
         'Python path is not set, skip starting aider-chat service.',
@@ -86,8 +89,6 @@ export default class AiderChatService {
         cancellable: false,
       },
       async () => {
-        const randomPort = Math.floor(Math.random() * 10000) + 10000;
-
         const env = { ...process.env };
 
         const httpConfig = vscode.workspace.getConfiguration('http');
@@ -112,7 +113,7 @@ export default class AiderChatService {
               path.join(this.context.extensionUri.fsPath, 'server/main.py'),
               'run',
               '--port',
-              randomPort.toString(),
+              this.port.toString(),
             ],
             {
               cwd: folderPath,
@@ -167,10 +168,9 @@ export default class AiderChatService {
               this.outputChannel.info(`aider-chat: ${line}`);
               if (
                 !isRunning &&
-                line.includes(`Running on http://127.0.0.1:${randomPort}`)
+                line.includes(`Running on http://127.0.0.1:${this.port}`)
               ) {
                 isRunning = true;
-                this.port = randomPort;
                 this.onStarted();
                 clearTimeout(timer);
                 resolve();
