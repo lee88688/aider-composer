@@ -40,7 +40,9 @@ class CaptureIO(InputOutput):
             fancy_input=fancy_input,
         )
 
-    def tool_output(self, msg: str | None = "", *, log_only: bool = False, bold: bool = False) -> None:
+    def tool_output(self, msg: str = "", *, log_only: bool = False, bold: bool = False) -> None:
+        if not isinstance(msg, str):
+            raise TypeError("msg must be a string")
         """Capture output lines for processing by the chat interface."""
         msg_str = str(msg) if msg is not None else "None"
         if not log_only:
@@ -70,6 +72,8 @@ class CaptureIO(InputOutput):
         return lines
 
     def write_text(self, filename: str, content: str) -> None:
+        if not isinstance(filename, str) or not isinstance(content, str):
+            raise TypeError("filename and content must be strings")
         """Capture file write operations for processing by the chat interface."""
         logger.info("Writing file: %s", filename)
         self.write_files[filename] = content

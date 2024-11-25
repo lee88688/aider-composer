@@ -30,6 +30,14 @@ def test_tool_error(io: CaptureIO):
     assert io.get_captured_error_lines() == []  # Buffer should be cleared
 
 
+def test_tool_output_invalid_data(io: CaptureIO):
+    """Test tool output with invalid data types."""
+    with pytest.raises(TypeError):
+        io.tool_output(123)
+
+    with pytest.raises(TypeError):
+        io.tool_output(["list", "of", "strings"])
+
 def test_tool_warning(io: CaptureIO):
     """Test capturing tool warnings."""
     io.tool_warning("test warning")
@@ -63,6 +71,14 @@ def test_read_text(io: CaptureIO):
     io.write_text("unicode.txt", unicode_content)
     assert io.read_text("unicode.txt") == unicode_content
 
+def test_write_text_invalid_data(io: CaptureIO):
+    """Test write_text with invalid data types."""
+    with pytest.raises(TypeError):
+        io.write_text(123, "content")
+
+    with pytest.raises(TypeError):
+        io.write_text("test.txt", 456)
+
 def test_confirm_ask(io: CaptureIO):
     """Test confirmation prompts."""
     assert io.confirm_ask("Create new file test.txt?", subject="test.txt") is True
@@ -78,15 +94,24 @@ def test_confirm_ask(io: CaptureIO):
     assert io.confirm_ask("Create new file test.txt?", subject="test.txt", group="files") is True
     assert io.confirm_ask("Delete test.txt?", subject="test.txt", group="dangerous") is False
 
-def test_tool_output_edge_cases(io: CaptureIO):
+def test_write_text_edge_cases(io: CaptureIO):
+    """Test write_text with edge cases."""
+    # Test empty filename
+    io.write_text("", "content")
+    assert io.get_captured_write_files() == {"": "content"}
+
+    # Test very long filename
+    long_filename = "x" * 255
+    io.write_text(long_filename, "content")
+    assert io.get_captured_write_files() == {long_filename: "content"}
     """Test tool output with edge cases."""
     # Test empty message
     io.tool_output("")
     assert io.get_captured_lines() == [""]
 
     # Test None message
-    io.tool_output(None)
-    assert io.get_captured_lines() == ["None"]
+    with pytest.raises(TypeError):
+        io.tool_output(None)
 
     # Test very long message
     long_msg = "x" * 10000

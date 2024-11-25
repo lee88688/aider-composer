@@ -1,5 +1,7 @@
 """Tests for event data structures."""
 
+import pytest
+
 from server.events import (
     ChatChunkData,
     DataEventData,
@@ -23,6 +25,21 @@ def test_data_event():
     data = DataEventData(chunk="test chunk")
     assert data.chunk == "test chunk"
 
+def test_data_event_empty():
+    """Test DataEventData with empty chunk."""
+    data = DataEventData(chunk="")
+    assert data.chunk == ""
+
+def test_data_event_long():
+    """Test DataEventData with long chunk."""
+    long_chunk = "x" * 10000
+    data = DataEventData(chunk=long_chunk)
+    assert data.chunk == long_chunk
+
+def test_data_event_invalid_data():
+    """Test DataEventData with invalid data types."""
+    with pytest.raises(TypeError):
+        DataEventData(chunk=123)
 
 def test_usage_event():
     """Test UsageEventData creation and attributes."""
@@ -35,6 +52,11 @@ def test_usage_event():
     assert data.completion_tokens == COMPLETION_TOKENS
     assert data.total_tokens == TOTAL_TOKENS
 
+
+def test_usage_event_invalid_data():
+    """Test UsageEventData with invalid data types."""
+    with pytest.raises(TypeError):
+        UsageEventData(prompt_tokens="ten", completion_tokens="twenty", total_tokens="thirty")
 
 def test_write_event():
     """Test WriteEventData creation and attributes."""
@@ -84,7 +106,16 @@ def test_chat_chunk_data():
     assert data.event == "data"
     assert data.data.chunk == long_chunk
 
-def test_usage_event_edge_cases():
+def test_data_event_edge_cases():
+    """Test DataEventData with edge cases."""
+    # Test empty chunk
+    data = DataEventData(chunk="")
+    assert data.chunk == ""
+
+    # Test very long chunk
+    long_chunk = "x" * 10000
+    data = DataEventData(chunk=long_chunk)
+    assert data.chunk == long_chunk
     """Test UsageEventData with edge cases."""
     # Test zero tokens
     data = UsageEventData(prompt_tokens=0, completion_tokens=0, total_tokens=0)

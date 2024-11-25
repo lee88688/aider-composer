@@ -107,8 +107,6 @@ select = [
 ]
 
 ignore = [
-    "ANN101",  # Missing type annotation for self
-    "ANN102",  # Missing type annotation for cls
     "D203",    # One blank line before class (conflicts with D211)
     "D213",    # Multi-line docstring summary should start at the second line
     "E501"     # Line too long (handled by black)
@@ -131,7 +129,7 @@ known-first-party = ["server"]
 known-third-party = ["flask", "aider", "pytest"]
 lines-between-types = 1
 split-on-trailing-comma = true
-section-order = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+section-order = ["STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"

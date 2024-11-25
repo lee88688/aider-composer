@@ -1,19 +1,27 @@
 """Event data structures for the chat server."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 
 @dataclass
 class DataEventData:
     """Data event containing a response chunk."""
-    chunk: str
+    chunk: str = field(default_factory=str)
+
+    def __post_init__(self):
+        if not isinstance(self.chunk, str):
+            raise TypeError("chunk must be a string")
 
 @dataclass
 class UsageEventData:
     """Token usage statistics for the chat interaction."""
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
+    prompt_tokens: int = field(default_factory=int)
+    completion_tokens: int = field(default_factory=int)
+    total_tokens: int = field(default_factory=int)
+
+    def __post_init__(self):
+        if not all(isinstance(x, int) for x in [self.prompt_tokens, self.completion_tokens, self.total_tokens]):
+            raise TypeError("All token counts must be integers")
 
 @dataclass
 class WriteEventData:
