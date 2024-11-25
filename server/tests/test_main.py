@@ -26,7 +26,11 @@ def client() -> FlaskClient:
     return app.test_client()
 
 
+
 def test_chat_stream_missing_data(client: FlaskClient):
+    """Test chat endpoint with missing data."""
+    with patch("server.main.manager.chat") as mock_chat:
+        mock_chat.return_value = iter([])
     """Test chat endpoint with missing data."""
     response = client.post("/api/chat", headers={"Content-Type": "application/json"})
     assert response.status_code == HTTPStatus.BAD_REQUEST
@@ -87,7 +91,21 @@ def test_confirm_reply_missing_data(client: FlaskClient):
     assert b"Missing reply data" in response.data
 
 
+
+
 def test_chat_stream_edge_cases(client: FlaskClient):
+    """Test chat stream endpoint with edge cases."""
+    with patch("server.main.manager.chat") as mock_chat:
+        mock_chat.return_value = iter([
+            {"event": "data", "data": {"chunk": "mocked response"}},
+            {"event": "end"},
+        ])
+    """Test chat stream endpoint with edge cases."""
+    with patch("server.main.manager.chat") as mock_chat:
+        mock_chat.return_value = iter([
+            {"event": "data", "data": {"chunk": "mocked response"}},
+            {"event": "end"},
+        ])
     """Test chat stream endpoint with edge cases."""
     # Test empty message
     response = client.post(API_CHAT, json={
