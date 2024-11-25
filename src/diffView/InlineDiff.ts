@@ -58,13 +58,23 @@ export class InlineDiffViewManager
     );
 
     this.deletionDecorationType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: '#3e1c26',
+      light: {
+        backgroundColor: '#fddbe2',
+      },
+      dark: {
+        backgroundColor: '#3e1c23',
+      },
       isWholeLine: true,
     });
 
     this.insertionDecorationType = vscode.window.createTextEditorDecorationType(
       {
-        backgroundColor: '#1c3422',
+        light: {
+          backgroundColor: '#e6fde8',
+        },
+        dark: {
+          backgroundColor: '#1c331e',
+        },
         isWholeLine: true,
       },
     );
