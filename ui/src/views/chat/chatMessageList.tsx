@@ -12,9 +12,6 @@ import {
 import { useChatStore } from '../../stores/useChatStore';
 import { memo, useMemo } from 'react';
 import SyntaxHighlighter from 'react-syntax-highlighter';
-// react-syntax-highlighter 's highlight.js version is not same as package.json
-// here we just use style code.
-import './codeTheme.scss';
 
 const messageItemStyle = css({
   marginBottom: '16px',

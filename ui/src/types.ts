@@ -1,6 +1,17 @@
-type FileItem = { type: 'file'; fsPath: string; path: string; name: string };
+export type FileItem = {
+  type: 'file';
+  fsPath: string;
+  path: string;
+  name: string;
+};
+export type SnippetItem = {
+  type: 'snippet';
+  name: string;
+  content: string;
+  language?: string;
+};
 
-export type ChatReferenceItem = FileItem;
+export type ChatReferenceItem = FileItem | SnippetItem;
 
 export interface ChatUserMessage {
   id: string;

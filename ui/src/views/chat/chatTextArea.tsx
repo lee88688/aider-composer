@@ -577,6 +577,8 @@ export default function ChatTextArea() {
         borderRadius: '4px',
       }}
     >
+      {/* todo: confirm ask */}
+      {/* todo: snippet */}
       <ChatFileList />
       <div
         style={{

@@ -5,3 +5,12 @@
 .vscode-dark {
   @import 'highlight.js/scss/github-dark.scss';
 }
+
+.hljs {
+  background-color: transparent;
+
+  & code {
+    background-color: transparent;
+    font-family: var(--vscode-editor-font-family);
+  }
+}
