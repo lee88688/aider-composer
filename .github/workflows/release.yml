@@ -5,7 +5,7 @@ on:
 
 jobs:
   release:
-    name: Release
+    name: Release Workflow
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -14,46 +14,58 @@ jobs:
       id-token: write
 
     steps:
-      - name: Checkout
+      # Step 1: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v2
+      # Step 2: Set up Python environment
+      - name: Setup Python Environment
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dev dependencies
-        run: pip install -r server/requirements-dev.txt
+      # Step 3: Install Python dependencies
+      - name: Install Python Dev Dependencies
+        run: pip install --upgrade pip && pip install -r server/requirements-dev.txt
 
-      - name: Install main dependencies
+      - name: Install Python Main Dependencies
         run: pip install -r requirements.txt
 
-      - name: Run pre-commit
+      # Step 4: Run Python linters and tests
+      - name: Run Pre-Commit Hooks
         run: pre-commit run --all-files
 
-      - name: Run tests
-        run: pytest server
+      - name: Run Python Tests
+        run: pytest server --verbose
 
-      - name: Setup Node.js
+      # Step 5: Set up Node.js environment
+      - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
-      - name: Install dependencies
+      # Step 6: Install and build Node.js dependencies
+      - name: Install Node.js Dependencies
         run: npm ci && npm run compile
 
       - name: Build UI
-        run: cd ui && npm ci && npm run build
+        run: |
+          cd ui
+          npm ci
+          npm run build
 
-      - name: Semantic Release
+      # Step 7: Run Semantic Release
+      - name: Run Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: npx semantic-release
 
+      # Step 8: Optionally Publish to VS Code Marketplace
+      # Uncomment the following step if VS Code Marketplace publishing is required
       # - name: Publish to VS Code Marketplace
       #   if: ${{ success() }}
       #   env:
