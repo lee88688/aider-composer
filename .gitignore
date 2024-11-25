@@ -5,3 +5,4 @@ __pycache__
 .aider*
 .idea/
 *.vsix
+.env
