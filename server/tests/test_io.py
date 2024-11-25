@@ -4,18 +4,6 @@ import pytest
 from server.io import CaptureIO
 
 
-@pytest.fixture
-def io():
-    """Create a CaptureIO instance for testing."""
-    return CaptureIO(
-        pretty=False,
-        yes=False,
-        dry_run=False,
-        encoding="utf-8",
-        fancy_input=False,
-    )
-
-
 def test_tool_output(io: CaptureIO):
     """Test capturing tool output."""
     io.tool_output("test message")

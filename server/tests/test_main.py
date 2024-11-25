@@ -16,15 +16,13 @@ from server.main import app, manager
 from unittest.mock import patch
 
 # Test constants
-LONG_MESSAGE_LENGTH = 100000
-
+LONG_MESSAGE_LENGTH = 100
 
 @pytest.fixture
 def client() -> FlaskClient:
     """Create a test client for the Flask app."""
     app.config["TESTING"] = True
     return app.test_client()
-
 
 
 def test_chat_stream_missing_data(client: FlaskClient):

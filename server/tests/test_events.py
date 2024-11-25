@@ -1,5 +1,4 @@
 """Tests for event data structures."""
-
 import pytest
 
 from server.events import (
@@ -11,14 +10,16 @@ from server.events import (
     UsageEventData,
     WriteEventData,
 )
+from server.tests.conftest import (
+    COMPLETION_TOKENS,
+    PROMPT_TOKENS,
+    TEST_FILE_COUNT,
+    TOTAL_TOKENS,
+)
 
-# Test constants
-PROMPT_TOKENS = 10
-COMPLETION_TOKENS = 20
-TOTAL_TOKENS = 30
+# Test constants for edge cases
 LARGE_TOKEN_COUNT = 999999
 LARGE_TOTAL_TOKENS = 1999998
-TEST_FILE_COUNT = 4
 
 def test_data_event():
     """Test DataEventData creation and attributes."""
