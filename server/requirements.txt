@@ -1,0 +1,2 @@
+flask==3.1.0
+aider-chat==0.64.1
