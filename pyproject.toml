@@ -156,5 +156,5 @@ testpaths = ["server/tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --cov=server --cov-report=term-missing --tb=short"
+addopts = "-v --tb=short"
 pythonpath = [".", ".venv/lib/python3.12/site-packages"]
