@@ -478,6 +478,7 @@ export class InlineDiffViewManager
       false,
     );
     await this.saveDocument(editor);
+    this._onDidChangeCodeLenses.fire();
   }
 
   private async saveDocument(editor: vscode.TextEditor) {
@@ -535,6 +536,7 @@ export class InlineDiffViewManager
         'workbench.action.closeActiveEditor',
       );
     }
+    this._onDidChangeCodeLenses.fire();
   }
 
   async openDiffView(data: { path: string; content: string }): Promise<void> {
