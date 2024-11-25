@@ -18,15 +18,18 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
+
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install dev dependencies
         run: pip install -r server/requirements-dev.txt
-      
+
+      - name: Install main dependencies
+        run: pip install -r requirements.txt
+
       - name: Run pre-commit
         run: pre-commit run --all-files
 
