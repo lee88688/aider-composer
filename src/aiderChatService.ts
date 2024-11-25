@@ -28,6 +28,17 @@ export default class AiderChatService {
     }
 
     const config = vscode.workspace.getConfiguration('aider-composer');
+
+    const isRemote = config.get('chatService.isRemote') as boolean;
+    if (isRemote) {
+      this.port = config.get('chatService.port', 5000) as number;
+      this.outputChannel.info(
+        'Use remote aider chat service, port: ' + this.port,
+      );
+      this.onStarted();
+      return;
+    }
+
     const pythonPath = config.get('pythonPath') as string;
     const pythonPathFile = path.join(
       pythonPath,

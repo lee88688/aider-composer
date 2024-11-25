@@ -156,6 +156,18 @@
           "default": "",
           "description": "Python path which python executable is in and aider-chat package is installed"
         },
+        "aider-composer.chatService.isRemote": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use remote Aider chat service, restart vscode after changing"
+        },
+        "aider-composer.chatService.port": {
+          "type": "number",
+          "default": 5000,
+          "description": "The port number for Aider chat service, restart vscode after changing",
+          "minimum": 1,
+          "maximum": 65535
+        },
         "aider-composer.inlineDiff.enable": {
           "type": "boolean",
           "default": false,
@@ -172,7 +184,11 @@
     "lint": "eslint src",
     "test": "vscode-test",
     "build-ui": "npm run build --prefix ui",
-    "dev-ui": "npm run dev --prefix ui"
+    "dev-ui": "npm run dev --prefix ui",
+    "build-vsce": "docker buildx build --build-arg VSCE_TARGET=$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m) --progress plain --target vsce --output type=local,dest=./docker/build --file docker/Dockerfile ./",
+    "build-service": "docker buildx bake --progress plain --file docker/compose.yml",
+    "start-service": "docker-compose -f docker/compose.yml up -d",
+    "stop-service": "docker-compose -f docker/compose.yml down"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",

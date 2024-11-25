@@ -1,0 +1,38 @@
+###
+name: aider-composer
+
+services:
+  chat-service:
+    build:
+      context: ./
+      dockerfile: ./docker/Dockerfile
+      target: chat-service
+      args:
+        - AIDER_BASE_IMAGE=paulgauthier/aider-full
+    image: aider-composer/chat-service
+    ports:
+      - ${AIDER_PORT:-5000}:5000
+    environment:
+      # - OPENAI_API_KEY=-sk-1234
+      # - OPENAI_API_BASE=http://host.docker.internal:4000
+      #
+      - AIDER_MODEL=gpt-4o
+      - AIDER_WEAK_MODEL=gpt-4o-mini
+      #
+      - AIDER_ANALYTICS_DISABLE=true
+      - AIDER_ANALYTICS=false
+      - AIDER_DARK_MODE=true
+      #
+      - AIDER_BROWSER=true
+      - STREAMLIT_GATHER_USAGE_STATS=false
+      - STREAMLIT_NO_PROMPT=true
+      - STREAMLIT_SERVER_PORT=8501
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # paths of workspace needs to be identical on host and in container
+      # for file operations to work
+      # this is a limitation of the current implementation
+      # so it probably wont work on windows
+      - ${WORKSPACE_BASE:-/tmp/workspace}:${WORKSPACE_BASE:-/tmp/workspace}
+###
