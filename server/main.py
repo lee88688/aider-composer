@@ -156,11 +156,10 @@ class ChatSessionManager:
     def _process_message(self, message: str) -> Iterator[ChatChunkData]:
         """Process a single message and yield response chunks."""
         self.coder.reflected_message = None
-        for msg in self.coder.run_stream(message):
-            data = DataEventData(chunk=msg)
-            yield ChatChunkData(event=EVENT_DATA, data=data)
+        yield from (ChatChunkData(event=EVENT_DATA, data=DataEventData(chunk=msg))
+                   for msg in self.coder.run_stream(message))
 
-        if manager.coder.usage_report:
+        if self.coder.usage_report:
             yield ChatChunkData(event=EVENT_USAGE, data=UsageEventData(**self.coder.usage_report))
 
     def _handle_reflection(self, message: str) -> tuple[bool, str]:
@@ -230,23 +229,23 @@ def chat_stream() -> Response:
     if not request.is_json:
         return Response("Content-Type must be application/json", status=HTTPStatus.BAD_REQUEST)
 
-    try:
-        data = request.get_json(silent=True)
-        if data is None:
-            return Response("Missing request data", status=HTTPStatus.BAD_REQUEST)
+    data = request.get_json(silent=True)
+    if not data:
+        return Response("Missing request data", status=HTTPStatus.BAD_REQUEST)
 
-        data["reference_list"] = [ChatSessionReference(**item) for item in data["reference_list"]]
-        chat_session_data = ChatSessionData(**data)
+    try:
+        chat_session_data = ChatSessionData(
+            **{**data, "reference_list": [ChatSessionReference(**ref) for ref in data["reference_list"]]},
+        )
     except (TypeError, KeyError) as e:
-        return Response(f"Invalid request format: {e!s}", status=HTTPStatus.BAD_REQUEST)
+        return Response(f"Invalid request format: {e}", status=HTTPStatus.BAD_REQUEST)
 
     def generate() -> Iterator[str]:
         for msg in manager.chat(chat_session_data):
+            yield f"event: {msg.event}\n"
             if msg.data:
-                yield f"event: {msg.event}\n"
-                yield f"data: {json.dumps(msg.data)}\n\n"
-            else:
-                yield f"event: {msg.event}\n\n"
+                yield f"data: {json.dumps(msg.data)}\n"
+            yield "\n"
 
     return Response(generate(), mimetype=MIME_SSE)
 

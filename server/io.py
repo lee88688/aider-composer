@@ -7,6 +7,18 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
+class InvalidMessageError(TypeError):
+    """Error raised when message is not a string."""
+    def __init__(self) -> None:
+        """Initialize the error with a message."""
+        super().__init__("message must be a string")
+
+class InvalidFileDataError(TypeError):
+    """Error raised when filename or content is not a string."""
+    def __init__(self) -> None:
+        """Initialize the error with a message."""
+        super().__init__("filename and content must be strings")
+
 class CaptureIO(InputOutput):
     """Custom IO handler that captures output and file operations.
 
@@ -41,13 +53,12 @@ class CaptureIO(InputOutput):
         )
 
     def tool_output(self, msg: str = "", *, log_only: bool = False, bold: bool = False) -> None:
+        """Capture and output a message from the tool."""
         if not isinstance(msg, str):
-            raise TypeError("msg must be a string")
-        """Capture output lines for processing by the chat interface."""
-        msg_str = str(msg) if msg is not None else "None"
+            raise InvalidMessageError
         if not log_only:
-            self.lines.append(msg_str)
-        super().tool_output(msg_str, log_only=log_only, bold=bold)
+            self.lines.append(msg)
+        super().tool_output(msg, log_only=log_only, bold=bold)
 
     def tool_error(self, msg: str) -> None:
         """Capture error lines for processing by the chat interface."""
@@ -72,8 +83,14 @@ class CaptureIO(InputOutput):
         return lines
 
     def write_text(self, filename: str, content: str) -> None:
+        """Write text content to a file.
+
+        Args:
+            filename: Path to the file to write
+            content: Text content to write
+        """
         if not isinstance(filename, str) or not isinstance(content, str):
-            raise TypeError("filename and content must be strings")
+            raise InvalidFileDataError
         """Capture file write operations for processing by the chat interface."""
         logger.info("Writing file: %s", filename)
         self.write_files[filename] = content

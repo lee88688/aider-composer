@@ -11,46 +11,37 @@ LONG_STRING_LENGTH = 1000
 
 
 def test_chat_setting():
-    """Test ChatSetting creation and attributes."""
-    setting = ChatSetting(
-        provider="test",
-        api_key="key123",
-        model="gpt-3.5",
-        base_url="http://test.com",
-    )
-    assert setting.provider == "test"
-    assert setting.api_key == "key123"
-    assert setting.model == "gpt-3.5"
-    assert setting.base_url == "http://test.com"
-
+    """Test ChatSetting creation and validation."""
+    setting = ChatSetting(provider="test", api_key="key123", model="gpt-3.5", base_url="http://test.com")
+    assert all(getattr(setting, attr) == val for attr, val in {
+        "provider": "test",
+        "api_key": "key123",
+        "model": "gpt-3.5",
+        "base_url": "http://test.com",
+    }.items())
 
 def test_chat_session_reference():
-    """Test ChatSessionReference creation and attributes."""
-    ref = ChatSessionReference(
-        readonly=True,
-        fs_path="/test/path.py",
-    )
-    assert ref.readonly is True
+    """Test ChatSessionReference creation."""
+    ref = ChatSessionReference(readonly=True, fs_path="/test/path.py")
+    assert ref.readonly
     assert ref.fs_path == "/test/path.py"
 
-
 def test_chat_session_data():
-    """Test ChatSessionData creation and attributes."""
-    with patch("server.main.manager.chat") as mock_chat:
-        mock_chat.return_value = iter([])
-    """Test ChatSessionData creation and attributes."""
-    ref = ChatSessionReference(readonly=False, fs_path="test.py")
-    data = ChatSessionData(
-        chat_type=CHAT_MODE_ASK,
-        diff_format=DIFF_FORMAT_DIFF,
-        message="test message",
-        reference_list=[ref],
-    )
-    assert data.chat_type == "ask"
-    assert data.diff_format == "diff"
-    assert data.message == "test message"
-    assert len(data.reference_list) == 1
-    assert data.reference_list[0] == ref
+    """Test ChatSessionData creation and validation."""
+    with patch("server.main.manager.chat", return_value=iter([])):
+        ref = ChatSessionReference(readonly=False, fs_path="test.py")
+        data = ChatSessionData(
+            chat_type=CHAT_MODE_ASK,
+            diff_format=DIFF_FORMAT_DIFF,
+            message="test message",
+            reference_list=[ref],
+        )
+        assert all(getattr(data, attr) == val for attr, val in {
+            "chat_type": "ask",
+            "diff_format": "diff",
+            "message": "test message",
+            "reference_list": [ref],
+        }.items())
 
 def test_chat_session_data_invalid_data():
     """Test ChatSessionData with invalid data types."""
@@ -101,7 +92,9 @@ def test_chat_setting_invalid_data():
     with pytest.raises(TypeError):
         ChatSetting(provider="test", api_key=None, model="model", base_url="http://test.com")
 
-def test_chat_session_data_edge_cases():
+@pytest.mark.usefixtures("mock_chat_response")
+@patch("server.main.manager.chat", return_value=iter([]))
+def test_chat_session_data_edge_cases(mock_chat):
     """Test ChatSessionData with edge cases."""
     ref = ChatSessionReference(readonly=False, fs_path="test.py")
 
