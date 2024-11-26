@@ -1,3 +1,24 @@
+## [1.3.5](https://github.com/lee88688/aider-composer/compare/v1.3.4...v1.3.5) (2024-11-26)
+
+
+### Bug Fixes
+
+* ovsx publish failed ([#36](https://github.com/lee88688/aider-composer/issues/36)) ([1c25383](https://github.com/lee88688/aider-composer/commit/1c25383d5ea67e2ddca376cc29da7745e2bc7a67))
+
+## [1.3.4](https://github.com/lee88688/aider-composer/compare/v1.3.3...v1.3.4) (2024-11-25)
+
+
+### Bug Fixes
+
+* add support to open vsx ([02a49b6](https://github.com/lee88688/aider-composer/commit/02a49b6c156dfa7c0b3a6b863232caacca3be01a))
+
+## [1.3.3](https://github.com/lee88688/aider-composer/compare/v1.3.2...v1.3.3) (2024-11-25)
+
+
+### Bug Fixes
+
+* inline diff preview bugs ([#33](https://github.com/lee88688/aider-composer/issues/33)) ([e91623d](https://github.com/lee88688/aider-composer/commit/e91623dfa396cd48c48254805248c7d40e865160))
+
 ## [1.3.2](https://github.com/lee88688/aider-composer/compare/v1.3.1...v1.3.2) (2024-11-23)
 
 
