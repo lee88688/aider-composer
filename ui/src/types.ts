@@ -1,17 +1,21 @@
-export type FileItem = {
+export type ChatReferenceFileItem = {
   type: 'file';
   fsPath: string;
   path: string;
   name: string;
 };
-export type SnippetItem = {
+
+export type ChatReferenceSnippetItem = {
   type: 'snippet';
   name: string;
   content: string;
   language?: string;
+  path: string;
 };
 
-export type ChatReferenceItem = FileItem | SnippetItem;
+export type ChatReferenceItem =
+  | ChatReferenceFileItem
+  | ChatReferenceSnippetItem;
 
 export interface ChatUserMessage {
   id: string;

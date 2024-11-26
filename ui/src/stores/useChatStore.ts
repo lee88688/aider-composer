@@ -5,12 +5,19 @@ import { SSE, SSEvent } from 'sse.js';
 import {
   ChatAssistantMessage,
   ChatMessage,
+  ChatReferenceFileItem,
   ChatReferenceItem,
+  ChatReferenceSnippetItem,
   DiffFormat,
   SerializedChatUserMessageChunk,
 } from '../types';
 import { nanoid } from 'nanoid';
-import { logToOutput, showErrorMessage, writeFile } from '../commandApi';
+import {
+  cancelGenerateCode,
+  logToOutput,
+  showErrorMessage,
+  writeFile,
+} from '../commandApi';
 import useExtensionStore from './useExtensionStore';
 import { persistStorage } from './lib';
 
@@ -117,11 +124,13 @@ export const useChatStore = create(
       history: [] as ChatMessage[],
       // current assistant message from server
       current: undefined as ChatAssistantMessage | undefined,
+      // generate code snippet
+      generateCodeSnippet: undefined as ChatReferenceSnippetItem | undefined,
       // current chat reference list
       chatReferenceList: [] as ChatReferenceItemWithReadOnly[],
       // current editor file
       currentEditorReference: undefined as
-        | ChatReferenceItemWithReadOnly
+        | (ChatReferenceFileItem & { readonly?: boolean })
         | undefined,
     },
     (set, get) => ({
@@ -139,7 +148,9 @@ export const useChatStore = create(
         set((state) => {
           // if already exists, do nothing
           if (
-            state.chatReferenceList.find((r) => r.fsPath === reference.fsPath)
+            state.chatReferenceList
+              .filter((item) => item.type === 'file')
+              .find((r) => r.fsPath === reference.fsPath)
           ) {
             return state;
           }
@@ -169,6 +180,10 @@ export const useChatStore = create(
             ),
           };
         });
+      },
+      async cancelGenerateCode() {
+        await cancelGenerateCode();
+        set({ generateCodeSnippet: undefined });
       },
       clickOnChatReference(reference: ChatReferenceItemWithReadOnly) {
         set((state) => {

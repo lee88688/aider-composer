@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import Disposables from '../utils/disposables';
 
 interface CurrentGeneration {
   uri: string;
@@ -6,11 +7,10 @@ interface CurrentGeneration {
   code: string;
   // line and count
   codeRange: readonly [number, number];
+  language?: string;
 }
 
-export default class GenerateCodeManager {
-  protected disposables: vscode.Disposable[] = [];
-
+export default class GenerateCodeManager extends Disposables {
   private currentGeneration?: CurrentGeneration;
 
   private generateLineDecorationType: vscode.TextEditorDecorationType;
@@ -21,6 +21,8 @@ export default class GenerateCodeManager {
     this._onDidChangeCurrentGeneration.event;
 
   constructor(private outputChannel: vscode.LogOutputChannel) {
+    super();
+
     this.generateLineDecorationType =
       vscode.window.createTextEditorDecorationType({
         backgroundColor: '#7a715c',
@@ -48,6 +50,7 @@ export default class GenerateCodeManager {
             new vscode.Range(result[0], 0, result[1], 0),
           ),
           codeRange: result,
+          language: editor.document.languageId,
         };
 
         this._onDidChangeCurrentGeneration.fire(this.currentGeneration);
@@ -94,15 +97,6 @@ export default class GenerateCodeManager {
 
     return [0, line] as const;
   }
-
-  public dispose = () => {
-    while (this.disposables.length) {
-      const disposable = this.disposables.pop();
-      if (disposable) {
-        disposable.dispose();
-      }
-    }
-  };
 
   clearCurrentGeneration() {
     if (this.currentGeneration) {

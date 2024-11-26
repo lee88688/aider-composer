@@ -165,6 +165,10 @@ export default function ChatFileList() {
   const currentEditorReference = useChatStore(
     (state) => state.currentEditorReference,
   );
+  const generateCodeSnippet = useChatStore(
+    (state) => state.generateCodeSnippet,
+  );
+
   const chatReferenceList = useChatStore((state) => state.chatReferenceList);
   const removeChatReference = useChatStore(
     (state) => state.removeChatReference,
@@ -172,6 +176,8 @@ export default function ChatFileList() {
   const clickOnChatReference = useChatStore(
     (state) => state.clickOnChatReference,
   );
+
+  const cancelGenerateCode = useChatStore((state) => state.cancelGenerateCode);
 
   return (
     <div
@@ -208,6 +214,16 @@ export default function ChatFileList() {
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>
+      {generateCodeSnippet && (
+        <FileItem
+          key={'generate-code'}
+          name={generateCodeSnippet.name}
+          type={'generate code'}
+          isEdit={false}
+          title={generateCodeSnippet.path}
+          onClose={() => cancelGenerateCode()}
+        />
+      )}
       {currentEditorReference && (
         <FileItem
           key={'current'}
@@ -219,7 +235,11 @@ export default function ChatFileList() {
         />
       )}
       {chatReferenceList
-        .filter((item) => item.fsPath !== currentEditorReference?.fsPath)
+        .filter(
+          (item) =>
+            item.type === 'file' &&
+            item.fsPath !== currentEditorReference?.fsPath,
+        )
         .map((reference) => (
           <FileItem
             key={reference.path}

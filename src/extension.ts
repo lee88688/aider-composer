@@ -50,6 +50,7 @@ export function activate(context: vscode.ExtensionContext) {
     context,
     outputChannel,
     diffViewManager,
+    generateCodeManager,
   );
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(

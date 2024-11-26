@@ -1,7 +1,11 @@
 import { nanoid } from 'nanoid';
 import useExtensionStore, { ViewType } from './stores/useExtensionStore';
 import { useChatStore } from './stores/useChatStore';
-import { ChatReferenceItem } from './types';
+import {
+  ChatReferenceFileItem,
+  ChatReferenceItem,
+  ChatReferenceSnippetItem,
+} from './types';
 
 type Resolver = {
   resolve: (data: unknown) => void;
@@ -92,14 +96,21 @@ addCommandEventListener('set-view-type', ({ data }) => {
 });
 
 addCommandEventListener('current-editor-changed', ({ data }) => {
-  const item = data as ChatReferenceItem;
+  const item = data as ChatReferenceFileItem;
   useChatStore.setState({ currentEditorReference: item });
 });
 
 addCommandEventListener('server-started', async ({ data }) => {
-  console.log('server-started', data);
+  console.debug('server-started', data);
   useExtensionStore.setState({
     isStarted: true,
     serverUrl: data as string,
+  });
+});
+
+addCommandEventListener('generate-code', ({ data }) => {
+  console.debug('generate-code', data);
+  useChatStore.setState({
+    generateCodeSnippet: data as ChatReferenceSnippetItem,
   });
 });

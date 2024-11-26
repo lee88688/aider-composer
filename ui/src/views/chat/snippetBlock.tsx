@@ -1,7 +1,7 @@
 import { SnippetReference } from './snippetReference';
-import { SnippetItem } from '../../types';
+import { ChatReferenceSnippetItem } from '../../types';
 
-const snippet: SnippetItem = {
+const snippet: ChatReferenceSnippetItem = {
   type: 'snippet',
   name: 'Hello, world!',
   language: 'typescript',

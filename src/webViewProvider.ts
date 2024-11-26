@@ -15,6 +15,7 @@ import { getUri } from './utils/getUri';
 import { getNonce } from './utils/getNonce';
 import { isProductionMode } from './utils/isProductionMode';
 import { DiffViewManager } from './diffView';
+import GenerateCodeManager from './generateCode/generateCodeManager';
 
 class VscodeReactView implements WebviewViewProvider {
   public static readonly viewType = 'aider-composer.SidebarProvider';
@@ -34,6 +35,7 @@ class VscodeReactView implements WebviewViewProvider {
     private readonly context: vscode.ExtensionContext,
     private outputChannel: vscode.LogOutputChannel,
     private diffViewManager: DiffViewManager,
+    private generateCodeManager: GenerateCodeManager,
   ) {
     this.setupPromise = new Promise((resolve) => {
       this.setupResolve = () => {
@@ -47,6 +49,24 @@ class VscodeReactView implements WebviewViewProvider {
         this.setupResolve = () => {};
       };
     });
+
+    this.disposables.push(
+      generateCodeManager.onDidChangeCurrentGeneration((generation) => {
+        const uri = vscode.Uri.parse(generation.uri);
+        this.postMessageToWebview({
+          command: 'generate-code',
+          data: {
+            ...generation,
+            type: 'snippet',
+            name: `${path.basename(uri.fsPath)}(${generation.codeRange[0]}-${generation.codeRange[1]})`,
+            content: generation.code,
+            language: generation.language,
+            fsPath: uri.fsPath,
+            path: path.relative(this.getFileBasePath(uri), uri.fsPath),
+          },
+        });
+      }),
+    );
   }
 
   public resolveWebviewView(
@@ -196,6 +216,11 @@ class VscodeReactView implements WebviewViewProvider {
           case 'show-info-message':
             promise = this.showInfoMessage(data);
             break;
+          // generate code
+          case 'cancel-generate-code':
+            promise = this.cancelGenerateCode();
+            break;
+          // store state
           case 'set-global-state':
             promise = this.setGlobalState(data);
             break;
@@ -246,6 +271,10 @@ class VscodeReactView implements WebviewViewProvider {
         data: this.serverUrl,
       });
     }
+  }
+
+  private async cancelGenerateCode() {
+    return this.generateCodeManager.clearCurrentGeneration();
   }
 
   private async setSecretState(data: { key: string; value: any }) {
