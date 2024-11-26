@@ -5,6 +5,7 @@ __pycache__
 .aider*
 .idea/
 *.vsix
+.env
 .pytest_cache/
 .ruff_cache/
 .vscode/
