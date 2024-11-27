@@ -114,3 +114,17 @@ addCommandEventListener('generate-code', ({ data }) => {
     generateCodeSnippet: data as ChatReferenceSnippetItem,
   });
 });
+
+addCommandEventListener('insert-into-chat', ({ data }) => {
+  console.debug('insert-into-chat', data);
+  if (data) {
+    useChatStore.setState((state) => ({
+      ...state,
+      chatReferenceList: [
+        ...state.chatReferenceList,
+        data as ChatReferenceSnippetItem,
+      ],
+    }));
+  }
+  useExtensionStore.setState({ viewType: 'chat' });
+});

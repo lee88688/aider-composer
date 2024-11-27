@@ -1,4 +1,4 @@
-import { ChatReferenceItem } from './types';
+import { ChatReferenceFileItem } from './types';
 import { callCommand } from './vscode';
 
 export function webviewReady() {
@@ -33,7 +33,7 @@ export function showInfoMessage(message: string) {
 
 export function getOpenedFiles() {
   return callCommand('get-opened-files', null) as Promise<
-    Omit<ChatReferenceItem, 'type'>[]
+    Omit<ChatReferenceFileItem, 'type'>[]
   >;
 }
 

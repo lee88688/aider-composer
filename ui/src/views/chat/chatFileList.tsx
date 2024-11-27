@@ -8,7 +8,7 @@ import { getOpenedFiles, searchFile } from '../../commandApi';
 import { useDebounceEffect } from 'ahooks';
 import ScrollArea from '../../components/scrollArea';
 import { useChatStore } from '../../stores/useChatStore';
-import { ChatReferenceItem } from '../../types';
+import { ChatReferenceFileItem, ChatReferenceItem } from '../../types';
 
 const Button = styled.button({
   height: '18px',
@@ -103,7 +103,7 @@ const listCss = css({
 // when empty input, show opened files in editor
 // when input, show search result
 function FileSearchList() {
-  const [references, setReferences] = useState<ChatReferenceItem[]>([]);
+  const [references, setReferences] = useState<ChatReferenceFileItem[]>([]);
   const [query, setQuery] = useState('');
 
   const addChatReference = useChatStore((state) => state.addChatReference);
@@ -234,23 +234,17 @@ export default function ChatFileList() {
           onClose={() => removeChatReference(currentEditorReference)}
         />
       )}
-      {chatReferenceList
-        .filter(
-          (item) =>
-            item.type === 'file' &&
-            item.fsPath !== currentEditorReference?.fsPath,
-        )
-        .map((reference) => (
-          <FileItem
-            key={reference.path}
-            {...reference}
-            type={reference.type}
-            isEdit={!reference.readonly}
-            title={reference.path}
-            onClick={() => clickOnChatReference(reference)}
-            onClose={() => removeChatReference(reference)}
-          />
-        ))}
+      {chatReferenceList.map((reference, index) => (
+        <FileItem
+          key={`${reference.path}-${index}`}
+          {...reference}
+          type={reference.type}
+          isEdit={reference.type === 'file' && !reference.readonly}
+          title={reference.path}
+          onClick={() => clickOnChatReference(reference)}
+          onClose={() => removeChatReference(reference)}
+        />
+      ))}
     </div>
   );
 }

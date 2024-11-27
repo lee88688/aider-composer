@@ -36,6 +36,7 @@ import { List, ListItem } from '../../components/list';
 import ToggleGroup from './ToggleGroup';
 import { useChatStore, useChatSettingStore } from '../../stores/useChatStore';
 import {
+  ChatReferenceFileItem,
   ChatReferenceItem,
   DiffFormat,
   SerializedChatUserMessageChunk,

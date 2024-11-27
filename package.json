@@ -37,7 +37,13 @@
       {
         "command": "aider-composer.GenerateCode",
         "key": "ctrl+shift+k",
-        "when": "editorTextFocus"
+        "when": "editorTextFocus && !editorReadonly"
+      },
+      {
+        "command": "aider-composer.InsertIntoChat",
+        "key": "ctrl+shift+l",
+        "mac": "cmd+shift+l",
+        "when": "editorTextFocus && !editorReadonly"
       }
     ],
     "viewsContainers": {
@@ -120,6 +126,11 @@
         "command": "aider-composer.GenerateCode",
         "title": "Generate Code",
         "icon": "$(code)"
+      },
+      {
+        "command": "aider-composer.InsertIntoChat",
+        "title": "Insert Into Chat",
+        "icon": "$(arrow-right)"
       }
     ],
     "menus": {

@@ -6,6 +6,7 @@ export type ChatReferenceFileItem = {
 };
 
 export type ChatReferenceSnippetItem = {
+  id: string;
   type: 'snippet';
   name: string;
   content: string;

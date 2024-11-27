@@ -6,11 +6,17 @@ export function ChatReferenceItemPreview() {
   const generateCodeSnippet = useChatStore(
     (state) => state.generateCodeSnippet,
   );
+  const currentPreviewReference = useChatStore(
+    (state) => state.currentPreviewReference,
+  );
   return (
     <ScrollArea>
-      {generateCodeSnippet && (
-        <SnippetReference snippet={generateCodeSnippet} />
-      )}
+      {(currentPreviewReference && (
+        <SnippetReference snippet={currentPreviewReference} />
+      )) ||
+        (generateCodeSnippet && (
+          <SnippetReference snippet={generateCodeSnippet} />
+        ))}
     </ScrollArea>
   );
 }

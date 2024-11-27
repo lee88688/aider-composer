@@ -34,6 +34,7 @@ type ServerChatPayload = {
 };
 
 type ChatReferenceItemWithReadOnly = ChatReferenceItem & { readonly?: boolean };
+type ChatFileItemWithReadOnly = ChatReferenceFileItem & { readonly?: boolean };
 
 type ChatSessionHistory = {
   id: string;
@@ -117,6 +118,50 @@ export const useChatSessionStore = create(
   ),
 );
 
+function formatCurrentChatMessage(
+  message: string,
+  options: {
+    generateCodeSnippet?: ChatReferenceSnippetItem;
+    chatReferenceList?: ChatReferenceItemWithReadOnly[];
+  },
+) {
+  let reference = '';
+  if (options.chatReferenceList) {
+    reference = options.chatReferenceList
+      .filter((r) => r.type === 'snippet')
+      .map(
+        (r) =>
+          `<snippet fileName="${r.name}" language="${r.language}">\n${r.content}\n</snippet>`,
+      )
+      .join('\n');
+    reference = `the following snippets are available:\n${reference}`;
+  }
+
+  if (options.generateCodeSnippet) {
+    return `Your task is to generate code for the file \`${options.generateCodeSnippet.path}\` according to the user's request.
+First, read the user's request.
+Next, add the required code **only** on the line directly below the existing code in the file.
+**Do not generate code in any other part of the file. In other words, place the code immediately following the line with "print('hello world')" and nowhere else.**
+The existing code in \`${options.generateCodeSnippet.path}\` is as follows:
+\`\`\`${options.generateCodeSnippet.language}
+${options.generateCodeSnippet.content.trimEnd()}
+\`\`\`
+
+Here is the user's request, delimited by triple quotes:
+""" 
+${message}
+"""
+
+Please reply in the same language as the request.`;
+  }
+
+  if (reference) {
+    message = `${reference}\n\n${message}`;
+  }
+
+  return message;
+}
+
 export const useChatStore = create(
   combine(
     {
@@ -129,8 +174,9 @@ export const useChatStore = create(
       // current chat reference list
       chatReferenceList: [] as ChatReferenceItemWithReadOnly[],
       // current editor file
-      currentEditorReference: undefined as
-        | (ChatReferenceFileItem & { readonly?: boolean })
+      currentEditorReference: undefined as ChatFileItemWithReadOnly | undefined,
+      currentPreviewReference: undefined as
+        | ChatReferenceSnippetItem
         | undefined,
     },
     (set, get) => ({
@@ -141,16 +187,17 @@ export const useChatStore = create(
           current: undefined,
         });
       },
-      setCurrentEditorReference(reference: ChatReferenceItemWithReadOnly) {
+      setCurrentEditorReference(reference: ChatFileItemWithReadOnly) {
         set({ currentEditorReference: reference });
       },
       addChatReference(reference: ChatReferenceItemWithReadOnly) {
         set((state) => {
           // if already exists, do nothing
           if (
-            state.chatReferenceList
-              .filter((item) => item.type === 'file')
-              .find((r) => r.fsPath === reference.fsPath)
+            reference.type === 'file' &&
+            state.chatReferenceList.find(
+              (r) => r.type === 'file' && r.fsPath === reference.fsPath,
+            )
           ) {
             return state;
           }
@@ -163,21 +210,29 @@ export const useChatStore = create(
       },
       removeChatReference(reference: ChatReferenceItemWithReadOnly) {
         set((state) => {
-          if (state.currentEditorReference?.fsPath === reference.fsPath) {
+          if (
+            reference.type === 'file' &&
+            state.currentEditorReference?.fsPath === reference.fsPath
+          ) {
             return {
               ...state,
               currentEditorReference: undefined,
               chatReferenceList: state.chatReferenceList.filter(
-                (r) => r.fsPath !== reference.fsPath,
+                (r) => r.type === 'file' && r.fsPath !== reference.fsPath,
               ),
             };
           }
 
           return {
             ...state,
-            chatReferenceList: state.chatReferenceList.filter(
-              (r) => r.fsPath !== reference.fsPath,
-            ),
+            chatReferenceList: state.chatReferenceList.filter((r) => {
+              if (reference.type === 'file') {
+                return r.type === 'file' && r.fsPath !== reference.fsPath;
+              } else if (reference.type === 'snippet') {
+                return r.type === 'snippet' && r.id !== reference.id;
+              }
+              return true;
+            }),
           };
         });
       },
@@ -187,6 +242,13 @@ export const useChatStore = create(
       },
       clickOnChatReference(reference: ChatReferenceItemWithReadOnly) {
         set((state) => {
+          if (reference.type !== 'file') {
+            return {
+              ...state,
+              currentPreviewReference: reference,
+            };
+          }
+
           if (state.currentEditorReference?.fsPath === reference.fsPath) {
             return state;
           }
@@ -194,7 +256,7 @@ export const useChatStore = create(
           return {
             ...state,
             chatReferenceList: state.chatReferenceList.map((r) => {
-              if (r.fsPath === reference.fsPath) {
+              if (r.type === 'file' && r.fsPath === reference.fsPath) {
                 return { ...r, readonly: !r.readonly };
               }
               return r;
@@ -203,7 +265,8 @@ export const useChatStore = create(
         });
       },
       sendChatMessage(messageChunks: SerializedChatUserMessageChunk[]) {
-        const message = messageChunks
+        // this message is input by user
+        const inputMessage = messageChunks
           .map((item) =>
             typeof item === 'string' ? item : `\`${item.reference.path}\``,
           )
@@ -215,6 +278,7 @@ export const useChatStore = create(
           )
           .join('');
 
+        const message = formatCurrentChatMessage(inputMessage, get());
         logToOutput('info', `sendChatMessage: ${message}`);
 
         set((state) => {
@@ -238,10 +302,13 @@ export const useChatStore = create(
           };
         });
 
-        let referenceList = get().chatReferenceList.map((item) => ({
-          fs_path: item.fsPath,
-          readonly: item.readonly ?? false,
-        }));
+        // reference list for server
+        let referenceList = get()
+          .chatReferenceList.filter((item) => item.type === 'file')
+          .map((item) => ({
+            fs_path: item.fsPath,
+            readonly: item.readonly ?? false,
+          }));
         const currentEditorFsPath = get().currentEditorReference?.fsPath;
         if (currentEditorFsPath) {
           referenceList = referenceList.filter(
@@ -264,7 +331,7 @@ export const useChatStore = create(
           payload: JSON.stringify({
             chat_type: chatType,
             diff_format: diffFormat,
-            message,
+            message: message,
             reference_list: referenceList,
           } satisfies ServerChatPayload),
         });

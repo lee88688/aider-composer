@@ -57,6 +57,7 @@ class VscodeReactView implements WebviewViewProvider {
           command: 'generate-code',
           data: {
             ...generation,
+            id: nanoid(),
             type: 'snippet',
             name: `${path.basename(uri.fsPath)}(${generation.codeRange[0]}-${generation.codeRange[1]})`,
             content: generation.code,
@@ -66,6 +67,35 @@ class VscodeReactView implements WebviewViewProvider {
           },
         });
       }),
+
+      vscode.commands.registerTextEditorCommand(
+        'aider-composer.InsertIntoChat',
+        async (editor: vscode.TextEditor) => {
+          const selection = editor.selection;
+          const uri = editor.document.uri;
+
+          await vscode.commands.executeCommand(
+            'workbench.view.extension.aider-composer-activitybar',
+          );
+
+          if (!selection.isEmpty) {
+            const text = editor.document.getText(selection);
+            this.postMessageToWebview({
+              command: 'insert-into-chat',
+              data: {
+                id: nanoid(),
+                type: 'snippet',
+                name: `${path.basename(uri.fsPath)}(${selection.start.line + 1}-${selection.end.line + 1})`,
+                content: text,
+                language: editor.document.languageId,
+                fsPath: uri.fsPath,
+                path: path.relative(this.getFileBasePath(uri), uri.fsPath),
+                codeRange: [selection.start.line + 1, selection.end.line + 1],
+              },
+            });
+          }
+        },
+      ),
     );
   }
 

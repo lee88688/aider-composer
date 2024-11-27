@@ -31,37 +31,41 @@ export default class GenerateCodeManager extends Disposables {
 
     this.disposables.push(
       this.generateLineDecorationType,
-      vscode.commands.registerCommand('aider-composer.GenerateCode', () => {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-          return;
-        }
+      vscode.commands.registerTextEditorCommand(
+        'aider-composer.GenerateCode',
+        async (editor: vscode.TextEditor) => {
+          const currentLine = editor.selection.active.line;
+          const lineRange = new vscode.Range(currentLine, 0, currentLine, 0);
 
-        const currentLine = editor.selection.active.line;
-        const lineRange = new vscode.Range(currentLine, 0, currentLine, 0);
+          editor.setDecorations(this.generateLineDecorationType, [lineRange]);
 
-        editor.setDecorations(this.generateLineDecorationType, [lineRange]);
+          const result = this.findUniqueCodeLines(editor.document, currentLine);
+          const [startLine, count] = result;
+          this.currentGeneration = {
+            uri: editor.document.uri.toString(),
+            line: currentLine,
+            code: editor.document.getText(
+              new vscode.Range(startLine, 0, startLine + count, 0),
+            ),
+            codeRange: [startLine, count + startLine],
+            language: editor.document.languageId,
+          };
 
-        const result = this.findUniqueCodeLines(editor.document, currentLine);
-        this.currentGeneration = {
-          uri: editor.document.uri.toString(),
-          line: currentLine,
-          code: editor.document.getText(
-            new vscode.Range(result[0], 0, result[1], 0),
-          ),
-          codeRange: result,
-          language: editor.document.languageId,
-        };
+          await vscode.commands.executeCommand(
+            'workbench.view.extension.aider-composer-activitybar',
+          );
 
-        this._onDidChangeCurrentGeneration.fire(this.currentGeneration);
+          this._onDidChangeCurrentGeneration.fire(this.currentGeneration);
 
-        this.outputChannel.debug(
-          `Command 'aider-composer.GenerateCode' triggered at line ${currentLine}`,
-        );
-      }),
+          this.outputChannel.debug(
+            `Command 'aider-composer.GenerateCode' triggered at line ${currentLine}`,
+          );
+        },
+      ),
     );
   }
 
+  // return [startLine, count]
   private findUniqueCodeLines(document: vscode.TextDocument, line: number) {
     const MIN_CODE_LENGTH = 4;
     const eol = document.eol === vscode.EndOfLine.LF ? '\n' : '\r\n';
@@ -76,22 +80,22 @@ export default class GenerateCodeManager extends Disposables {
       }
     }
 
-    let nextLine = line - 1;
-    while (nextLine >= 0) {
-      const nextLineText = document.lineAt(nextLine).text;
-      const nextLineTextTrimmed = nextLineText.trim();
-      if (nextLineTextTrimmed.length >= MIN_CODE_LENGTH) {
+    let preLine = line - 1;
+    while (preLine >= 0) {
+      const preLineText = document.lineAt(preLine).text;
+      const preLineTextTrimmed = preLineText.trim();
+      if (preLineTextTrimmed.length >= MIN_CODE_LENGTH) {
         const lines = [];
-        for (let i = nextLine; i <= line; i++) {
+        for (let i = preLine; i <= line; i++) {
           lines.push(document.lineAt(i).text);
         }
         const combinedText = lines.join(eol);
         const index = text.indexOf(combinedText);
         // lines are unique
         if (text.indexOf(combinedText, index + 1) === -1) {
-          return [nextLine, line - nextLine + 1] as const;
+          return [preLine, line - preLine + 1] as const;
         }
-        nextLine--;
+        preLine--;
       }
     }
 
