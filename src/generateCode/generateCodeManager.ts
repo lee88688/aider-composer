@@ -35,9 +35,6 @@ export default class GenerateCodeManager extends Disposables {
         'aider-composer.GenerateCode',
         async (editor: vscode.TextEditor) => {
           const currentLine = editor.selection.active.line;
-          const lineRange = new vscode.Range(currentLine, 0, currentLine, 0);
-
-          editor.setDecorations(this.generateLineDecorationType, [lineRange]);
 
           const result = this.findUniqueCodeLines(editor.document, currentLine);
           const [startLine, count] = result;
@@ -51,6 +48,8 @@ export default class GenerateCodeManager extends Disposables {
             language: editor.document.languageId,
           };
 
+          this.drawDecoration(editor);
+
           await vscode.commands.executeCommand(
             'workbench.view.extension.aider-composer-activitybar',
           );
@@ -62,7 +61,28 @@ export default class GenerateCodeManager extends Disposables {
           );
         },
       ),
+
+      vscode.window.onDidChangeActiveTextEditor((editor) => {
+        if (
+          editor &&
+          editor.document.uri.toString() === this.currentGeneration?.uri
+        ) {
+          this.drawDecoration(editor);
+        }
+      }),
     );
+  }
+
+  private drawDecoration(editor: vscode.TextEditor) {
+    if (this.currentGeneration) {
+      const lineRange = new vscode.Range(
+        this.currentGeneration.line,
+        0,
+        this.currentGeneration.line,
+        0,
+      );
+      editor.setDecorations(this.generateLineDecorationType, [lineRange]);
+    }
   }
 
   // return [startLine, count]

@@ -227,6 +227,9 @@ export const useChatStore = create(
         await cancelGenerateCode();
         set({ generateCodeSnippet: undefined });
       },
+      closePreviewReference() {
+        set({ currentPreviewReference: undefined });
+      },
       clickOnChatReference(reference: ChatReferenceItemWithReadOnly) {
         set((state) => {
           // click on snippet to open preview

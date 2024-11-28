@@ -147,7 +147,6 @@ export class InlineDiffViewManager
         },
       ),
 
-      // 添加活动编辑器变化的监听
       vscode.window.onDidChangeActiveTextEditor((editor) => {
         if (editor) {
           const uri = editor.document.uri.toString();
