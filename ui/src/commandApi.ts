@@ -7,7 +7,7 @@ export function webviewReady() {
 
 export function searchFile(query: string, limit: number = 20) {
   return callCommand('search-file', { query, limit }) as Promise<
-    { fsPath: string; path: string; basePath: string; name: string }[]
+    ChatReferenceFileItem[]
   >;
 }
 

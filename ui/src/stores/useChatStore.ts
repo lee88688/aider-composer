@@ -193,12 +193,7 @@ export const useChatStore = create(
       addChatReference(reference: ChatReferenceItemWithReadOnly) {
         set((state) => {
           // if already exists, do nothing
-          if (
-            reference.type === 'file' &&
-            state.chatReferenceList.find(
-              (r) => r.type === 'file' && r.fsPath === reference.fsPath,
-            )
-          ) {
+          if (state.chatReferenceList.find((r) => r.id === reference.id)) {
             return state;
           }
 
@@ -210,15 +205,12 @@ export const useChatStore = create(
       },
       removeChatReference(reference: ChatReferenceItemWithReadOnly) {
         set((state) => {
-          if (
-            reference.type === 'file' &&
-            state.currentEditorReference?.fsPath === reference.fsPath
-          ) {
+          if (state.currentEditorReference?.id === reference.id) {
             return {
               ...state,
               currentEditorReference: undefined,
               chatReferenceList: state.chatReferenceList.filter(
-                (r) => r.type === 'file' && r.fsPath !== reference.fsPath,
+                (r) => r.id !== reference.id,
               ),
             };
           }
@@ -226,12 +218,7 @@ export const useChatStore = create(
           return {
             ...state,
             chatReferenceList: state.chatReferenceList.filter((r) => {
-              if (reference.type === 'file') {
-                return r.type === 'file' && r.fsPath !== reference.fsPath;
-              } else if (reference.type === 'snippet') {
-                return r.type === 'snippet' && r.id !== reference.id;
-              }
-              return true;
+              return r.id !== reference.id;
             }),
           };
         });
@@ -242,21 +229,23 @@ export const useChatStore = create(
       },
       clickOnChatReference(reference: ChatReferenceItemWithReadOnly) {
         set((state) => {
-          if (reference.type !== 'file') {
+          // click on snippet to open preview
+          if (reference.type === 'snippet') {
             return {
               ...state,
               currentPreviewReference: reference,
             };
           }
 
-          if (state.currentEditorReference?.fsPath === reference.fsPath) {
+          if (state.currentEditorReference?.id === reference.id) {
             return state;
           }
 
+          // click on file to switch readonly state
           return {
             ...state,
             chatReferenceList: state.chatReferenceList.map((r) => {
-              if (r.type === 'file' && r.fsPath === reference.fsPath) {
+              if (r.type === 'file' && r.id === reference.id) {
                 return { ...r, readonly: !r.readonly };
               }
               return r;

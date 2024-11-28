@@ -383,6 +383,8 @@ class VscodeReactView implements WebviewViewProvider {
         }
 
         return {
+          id: uri.fsPath,
+          type: 'file',
           name: path.basename(uri.fsPath),
           basePath: basePath,
           path: path.relative(basePath, uri.fsPath),
@@ -427,6 +429,8 @@ class VscodeReactView implements WebviewViewProvider {
             ? path.relative(basePath, item.fsPath)
             : item.fsPath;
           return {
+            id: item.fsPath,
+            type: 'file',
             name: path.basename(item.fsPath),
             basePath,
             path: relativePath,
@@ -462,6 +466,8 @@ class VscodeReactView implements WebviewViewProvider {
       id: nanoid(),
       command: 'current-editor-changed',
       data: {
+        id: uri.fsPath,
+        type: 'file',
         name: path.basename(uri.fsPath),
         basePath,
         path: path.relative(basePath, uri.fsPath),

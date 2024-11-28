@@ -1,11 +1,7 @@
 import { nanoid } from 'nanoid';
 import useExtensionStore, { ViewType } from './stores/useExtensionStore';
 import { useChatStore } from './stores/useChatStore';
-import {
-  ChatReferenceFileItem,
-  ChatReferenceItem,
-  ChatReferenceSnippetItem,
-} from './types';
+import { ChatReferenceFileItem, ChatReferenceSnippetItem } from './types';
 
 type Resolver = {
   resolve: (data: unknown) => void;

@@ -8,7 +8,7 @@ import { getOpenedFiles, searchFile } from '../../commandApi';
 import { useDebounceEffect } from 'ahooks';
 import ScrollArea from '../../components/scrollArea';
 import { useChatStore } from '../../stores/useChatStore';
-import { ChatReferenceFileItem, ChatReferenceItem } from '../../types';
+import { ChatReferenceFileItem } from '../../types';
 
 const Button = styled.button({
   height: '18px',
@@ -113,12 +113,12 @@ function FileSearchList() {
       if (!query) {
         setReferences([]);
         getOpenedFiles().then((files) => {
-          setReferences(files.map((file) => ({ type: 'file', ...file })));
+          setReferences(files.map((file) => ({ ...file, type: 'file' })));
         });
         return;
       }
       searchFile(query).then((files) => {
-        setReferences(files.map((file) => ({ type: 'file', ...file })));
+        setReferences(files.map((file) => ({ ...file, type: 'file' })));
       });
     },
     [query],

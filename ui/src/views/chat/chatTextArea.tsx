@@ -36,7 +36,6 @@ import { List, ListItem } from '../../components/list';
 import ToggleGroup from './ToggleGroup';
 import { useChatStore, useChatSettingStore } from '../../stores/useChatStore';
 import {
-  ChatReferenceFileItem,
   ChatReferenceItem,
   DiffFormat,
   SerializedChatUserMessageChunk,
@@ -285,7 +284,7 @@ const ChatEditor = forwardRef<{ sendChat: () => void }>(
           return;
         }
         searchFile(search, 10).then((files) => {
-          setReferences(files.map((file) => ({ type: 'file', ...file })));
+          setReferences(files.map((file) => ({ ...file, type: 'file' })));
         });
       },
       [search],

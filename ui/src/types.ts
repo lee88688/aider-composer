@@ -1,4 +1,6 @@
 export type ChatReferenceFileItem = {
+  // this is just fsPath
+  id: string;
   type: 'file';
   fsPath: string;
   path: string;
