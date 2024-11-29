@@ -647,13 +647,13 @@ export class InlineDiffViewManager
 
   async acceptAllCode(): Promise<void> {
     for (const uri of this.fileChangeMap.keys()) {
-      await this.acceptAllChanges(vscode.Uri.file(uri));
+      await this.acceptAllChanges(vscode.Uri.parse(uri));
     }
   }
 
   async rejectAllCode(): Promise<void> {
     for (const uri of this.fileChangeMap.keys()) {
-      await this.rejectAllChanges(vscode.Uri.file(uri));
+      await this.rejectAllChanges(vscode.Uri.parse(uri));
     }
   }
 }
