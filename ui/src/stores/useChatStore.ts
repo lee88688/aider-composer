@@ -178,6 +178,8 @@ export const useChatStore = create(
       currentPreviewReference: undefined as
         | ChatReferenceSnippetItem
         | undefined,
+
+      currentChatRequest: undefined as SSE | undefined,
     },
     (set, get) => ({
       clearChat() {
@@ -328,6 +330,8 @@ export const useChatStore = create(
           } satisfies ServerChatPayload),
         });
 
+        set({ currentChatRequest: eventSource });
+
         eventSource.addEventListener('data', (event: { data: string }) => {
           const chunkMessage = JSON.parse(event.data) as ChatChunkMessage;
           set((state) => ({
@@ -380,6 +384,7 @@ export const useChatStore = create(
               ...state,
               history,
               current: undefined,
+              currentChatRequest: undefined,
             };
           });
         };
@@ -447,6 +452,10 @@ export const useChatStore = create(
           end();
           eventSource.close();
         };
+      },
+      cancelChat() {
+        get().currentChatRequest?.close();
+        set({ currentChatRequest: undefined });
       },
     }),
   ),

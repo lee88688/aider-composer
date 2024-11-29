@@ -250,6 +250,12 @@ class VscodeReactView implements WebviewViewProvider {
           case 'cancel-generate-code':
             promise = this.cancelGenerateCode();
             break;
+          case 'accept-generate-code':
+            promise = this.acceptGenerateCode();
+            break;
+          case 'reject-generate-code':
+            promise = this.rejectGenerateCode();
+            break;
           // store state
           case 'set-global-state':
             promise = this.setGlobalState(data);
@@ -304,6 +310,16 @@ class VscodeReactView implements WebviewViewProvider {
   }
 
   private async cancelGenerateCode() {
+    return this.generateCodeManager.clearCurrentGeneration();
+  }
+
+  private async acceptGenerateCode() {
+    await this.diffViewManager.acceptAllCode();
+    return this.generateCodeManager.clearCurrentGeneration();
+  }
+
+  private async rejectGenerateCode() {
+    await this.diffViewManager.rejectAllCode();
     return this.generateCodeManager.clearCurrentGeneration();
   }
 

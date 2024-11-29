@@ -15,8 +15,17 @@ export function writeFile(params: { path: string; content: string }) {
   return callCommand('write-file', params);
 }
 
+// generate code
 export function cancelGenerateCode() {
   return callCommand('cancel-generate-code', null);
+}
+
+export function acceptGenerateCode() {
+  return callCommand('accept-generate-code', null);
+}
+
+export function rejectGenerateCode() {
+  return callCommand('reject-generate-code', null);
 }
 
 export function logToOutput(type: 'info' | 'warn' | 'error', message: string) {

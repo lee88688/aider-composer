@@ -43,6 +43,7 @@ import {
 import { useDebounceEffect, useMemoizedFn } from 'ahooks';
 import { searchFile, showInfoMessage } from '../../commandApi';
 import { ChatReferenceItemPreview } from './chatReferenceItemPreview';
+import { ChatStatus } from './chatStatus';
 
 const MAX_SUPPORTED_SEARCH_CHAR = 20;
 
@@ -580,6 +581,7 @@ export default function ChatTextArea() {
     >
       {/* todo: confirm ask */}
       {/* todo: snippet */}
+      <ChatStatus />
       <ChatFileList />
       <ChatReferenceItemPreview />
       <div

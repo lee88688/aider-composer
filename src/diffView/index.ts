@@ -13,4 +13,10 @@ export abstract class DiffViewManager {
   };
 
   abstract openDiffView(data: { path: string; content: string }): Promise<void>;
+
+  // accept all code generate by aider
+  abstract acceptAllCode(): Promise<void>;
+
+  // reject all code generate by aider
+  abstract rejectAllCode(): Promise<void>;
 }
