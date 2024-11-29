@@ -28,15 +28,18 @@ export function ChatStatus() {
   const acceptCode = async () => {
     await acceptGenerateCode();
     cancelGenerateCode();
-    clearChat();
+    return clearChat();
   };
   const rejectCode = async () => {
     await rejectGenerateCode();
     cancelGenerateCode();
-    clearChat();
+    return clearChat();
   };
 
-  const regenerateCode = () => {};
+  const regenerateCode = async () => {
+    await rejectCode();
+    // set last message to text area
+  };
 
   let status: ReactNode;
   if (isGenerating) {
