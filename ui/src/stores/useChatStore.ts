@@ -377,8 +377,11 @@ export const useChatStore = create(
               ? [...state.history, state.current]
               : state.history;
 
-            const id = state.id;
-            useChatSessionStore.getState().addSession(id, history);
+            // generate code do not store in session
+            if (!state.generateCodeSnippet) {
+              const id = state.id;
+              useChatSessionStore.getState().addSession(id, history);
+            }
 
             return {
               ...state,
@@ -407,8 +410,11 @@ export const useChatStore = create(
               referenceList: state.chatReferenceList,
             });
 
-            const id = state.id;
-            useChatSessionStore.getState().addSession(id, history);
+            // generate code do not store in session
+            if (!state.generateCodeSnippet) {
+              const id = state.id;
+              useChatSessionStore.getState().addSession(id, history);
+            }
 
             // create new assistant message for next round
             return {

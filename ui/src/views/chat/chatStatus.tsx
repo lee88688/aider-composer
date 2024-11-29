@@ -21,12 +21,19 @@ export function ChatStatus() {
     Boolean(state.generateCodeSnippet && state.generateCodeSnippet),
   );
 
+  const cancelGenerateCode = useChatStore((state) => state.cancelGenerateCode);
+  const clearChat = useChatStore((state) => state.clearChat);
+
   const cancelChat = useChatStore((state) => state.cancelChat);
-  const acceptCode = () => {
-    acceptGenerateCode();
+  const acceptCode = async () => {
+    await acceptGenerateCode();
+    cancelGenerateCode();
+    clearChat();
   };
-  const rejectCode = () => {
-    rejectGenerateCode();
+  const rejectCode = async () => {
+    await rejectGenerateCode();
+    cancelGenerateCode();
+    clearChat();
   };
 
   const regenerateCode = () => {};
