@@ -9,7 +9,6 @@ import {
   rejectFile,
   rejectGenerateCode,
 } from '../../commandApi';
-import clsx from 'clsx';
 
 const statusLine = css({
   display: 'flex',
@@ -78,6 +77,7 @@ export function ChatStatus() {
   const clearChat = useChatStore((state) => state.clearChat);
 
   const cancelChat = useChatStore((state) => state.cancelChat);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const acceptCode = async () => {
     await acceptGenerateCode();
     cancelGenerateCode();
@@ -105,7 +105,8 @@ export function ChatStatus() {
   };
 
   let status: ReactNode;
-  if (isGenerating) {
+  // eslint-disable-next-line no-constant-condition
+  if (isGenerating && false) {
     status = (
       <div className={statusLine}>
         <RefreshCw
