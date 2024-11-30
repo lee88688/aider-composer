@@ -1,7 +1,7 @@
 import { RefreshCw, CircleX, Check, X, RotateCcw } from 'lucide-react';
 import { VSCodeButton, VSCodeDivider } from '@vscode/webview-ui-toolkit/react';
 import { useChatStore } from '../../stores/useChatStore';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { css } from '@emotion/css';
 import {
   acceptFile,
@@ -73,7 +73,7 @@ export function ChatStatus() {
   const currentEditFiles = useChatStore((state) => state.currentEditFiles);
 
   const cancelGenerateCode = useChatStore((state) => state.cancelGenerateCode);
-  const regenerateCode = useChatStore((state) => state.regenerateCode);
+  const clearEditFile = useChatStore((state) => state.clearEditFile);
   const clearChat = useChatStore((state) => state.clearChat);
 
   const cancelChat = useChatStore((state) => state.cancelChat);
@@ -90,7 +90,7 @@ export function ChatStatus() {
   };
 
   const handleRegenerateCode = async () => {
-    regenerateCode();
+    clearEditFile();
     await rejectCode();
     await clearChat();
     // set last message to text area
@@ -103,6 +103,16 @@ export function ChatStatus() {
   const handleRejectFile = async (path: string) => {
     await rejectFile(path);
   };
+
+  useEffect(() => {
+    if (currentEditFiles.every((file) => file.type !== 'add')) {
+      if (isGeneratingCode) {
+        cancelGenerateCode();
+      } else {
+        clearEditFile();
+      }
+    }
+  }, [cancelGenerateCode, clearEditFile, currentEditFiles, isGeneratingCode]);
 
   let status: ReactNode;
   // eslint-disable-next-line no-constant-condition

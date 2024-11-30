@@ -235,7 +235,7 @@ export const useChatStore = create(
         await cancelGenerateCode();
         set({ generateCodeSnippet: undefined, currentEditFiles: [] });
       },
-      regenerateCode() {
+      clearEditFile() {
         set({ currentEditFiles: [] });
       },
       closePreviewReference() {
