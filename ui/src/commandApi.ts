@@ -15,6 +15,22 @@ export function writeFile(params: { path: string; content: string }) {
   return callCommand('write-file', params);
 }
 
+// accept/reject file
+
+/**
+ * @param path: fs path
+ */
+export function acceptFile(path: string) {
+  return callCommand('accept-file', { path });
+}
+
+/**
+ * @param path: fs path
+ */
+export function rejectFile(path: string) {
+  return callCommand('reject-file', { path });
+}
+
 // generate code
 export function cancelGenerateCode() {
   return callCommand('cancel-generate-code', null);

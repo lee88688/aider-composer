@@ -9,6 +9,7 @@ import {
   ChatReferenceItem,
   ChatReferenceSnippetItem,
   DiffFormat,
+  DiffViewChange,
   SerializedChatUserMessageChunk,
 } from '../types';
 import { nanoid } from 'nanoid';
@@ -180,9 +181,14 @@ export const useChatStore = create(
         | undefined,
 
       currentChatRequest: undefined as SSE | undefined,
+      currentEditFiles: [] as DiffViewChange[],
     },
     (set, get) => ({
-      clearChat() {
+      async clearChat() {
+        const { serverUrl } = useExtensionStore.getState();
+        await fetch(`${serverUrl}/api/chat`, {
+          method: 'DELETE',
+        });
         set({
           id: nanoid(),
           history: [],
@@ -227,7 +233,10 @@ export const useChatStore = create(
       },
       async cancelGenerateCode() {
         await cancelGenerateCode();
-        set({ generateCodeSnippet: undefined });
+        set({ generateCodeSnippet: undefined, currentEditFiles: [] });
+      },
+      regenerateCode() {
+        set({ currentEditFiles: [] });
       },
       closePreviewReference() {
         set({ currentPreviewReference: undefined });

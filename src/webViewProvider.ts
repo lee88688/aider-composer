@@ -68,6 +68,21 @@ class VscodeReactView implements WebviewViewProvider {
         });
       }),
 
+      diffViewManager.onDidChange((change) => {
+        this.postMessageToWebview({
+          command: 'diff-view-change',
+          data: {
+            type: change.type,
+            path: path.relative(
+              this.getFileBasePath(vscode.Uri.file(change.path)),
+              change.path,
+            ),
+            name: path.basename(change.path),
+            fsPath: change.path,
+          },
+        });
+      }),
+
       vscode.commands.registerTextEditorCommand(
         'aider-composer.InsertIntoChat',
         async (editor: vscode.TextEditor) => {
@@ -130,7 +145,7 @@ class VscodeReactView implements WebviewViewProvider {
   private getHtmlForWebview(webview: Webview) {
     const file = 'src/main.tsx';
     const localPort = '5173';
-    const localServerUrl = `localhost:${localPort}`;
+    const localServerUrl = `127.0.0.1:${localPort}`;
 
     // The CSS file from the React build output
     const stylesUri = getUri(webview, this.context.extensionUri, [
@@ -155,7 +170,7 @@ class VscodeReactView implements WebviewViewProvider {
 
     const reactRefresh = /*html*/ `
         <script type="module">
-          import RefreshRuntime from "http://localhost:5173/@react-refresh"
+          import RefreshRuntime from "http://127.0.0.1:5173/@react-refresh"
           RefreshRuntime.injectIntoGlobalHook(window)
           window.$RefreshReg$ = () => {}
           window.$RefreshSig$ = () => (type) => type
@@ -175,11 +190,11 @@ class VscodeReactView implements WebviewViewProvider {
             `http://${localServerUrl} http://0.0.0.0:${localPort} 'unsafe-inline'`
       }`,
       `style-src ${webview.cspSource} 'self' 'unsafe-inline' https://*`,
-      `font-src ${webview.cspSource}`,
+      `font-src ${webview.cspSource} http://127.0.0.1:*`,
       `connect-src https://* ${
         isProd
           ? `http://127.0.0.1:*`
-          : `ws://${localServerUrl} http://localhost:*  http://127.0.0.1:*`
+          : `ws://${localServerUrl} http://127.0.0.1:*`
       }`,
     ];
 
@@ -246,6 +261,13 @@ class VscodeReactView implements WebviewViewProvider {
           case 'show-info-message':
             promise = this.showInfoMessage(data);
             break;
+          // accept/reject file
+          case 'accept-file':
+            promise = this.acceptFile(data.path);
+            break;
+          case 'reject-file':
+            promise = this.rejectFile(data.path);
+            break;
           // generate code
           case 'cancel-generate-code':
             promise = this.cancelGenerateCode();
@@ -309,17 +331,25 @@ class VscodeReactView implements WebviewViewProvider {
     }
   }
 
+  private async acceptFile(path: string) {
+    return this.diffViewManager.acceptFile(path);
+  }
+
+  private async rejectFile(path: string) {
+    return this.diffViewManager.rejectFile(path);
+  }
+
   private async cancelGenerateCode() {
     return this.generateCodeManager.clearCurrentGeneration();
   }
 
   private async acceptGenerateCode() {
-    await this.diffViewManager.acceptAllCode();
+    await this.diffViewManager.acceptAllFile();
     return this.generateCodeManager.clearCurrentGeneration();
   }
 
   private async rejectGenerateCode() {
-    await this.diffViewManager.rejectAllCode();
+    await this.diffViewManager.rejectAllFile();
     return this.generateCodeManager.clearCurrentGeneration();
   }
 

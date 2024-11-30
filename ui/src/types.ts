@@ -48,3 +48,10 @@ export enum DiffFormat {
   UDiff = 'udiff',
   Whole = 'whole',
 }
+
+export type DiffViewChange = {
+  type: 'add' | 'accept' | 'reject';
+  path: string;
+  name: string;
+  fsPath: string;
+};

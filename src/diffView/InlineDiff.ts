@@ -91,6 +91,10 @@ export class InlineDiffViewManager
           }
 
           this.fileChangeMap.delete(uri);
+          this._onDidChange.fire({
+            type: 'reject',
+            path: doc.uri.scheme === 'file' ? doc.uri.fsPath : doc.uri.path,
+          });
           this.outputChannel.debug(
             `Cleaned up decorations for ${doc.uri.fsPath}`,
           );
@@ -363,6 +367,10 @@ export class InlineDiffViewManager
         false,
       );
       this.fileChangeMap.delete(uri);
+      this._onDidChange.fire({
+        type: 'accept',
+        path: editor.document.uri.fsPath,
+      });
       await this.saveDocument(editor);
     }
   }
@@ -427,6 +435,10 @@ export class InlineDiffViewManager
         false,
       );
       this.fileChangeMap.delete(uri);
+      this._onDidChange.fire({
+        type: 'reject',
+        path: editor.document.uri.fsPath,
+      });
       if (editor.document.uri.scheme === 'file') {
         await this.saveDocument(editor);
       } else {
@@ -470,6 +482,10 @@ export class InlineDiffViewManager
     }
     await vscode.workspace.applyEdit(edit);
     this.fileChangeMap.delete(uri.toString());
+    this._onDidChange.fire({
+      type: 'accept',
+      path: uri.fsPath,
+    });
 
     await vscode.commands.executeCommand(
       'setContext',
@@ -521,6 +537,10 @@ export class InlineDiffViewManager
     }
     await vscode.workspace.applyEdit(edit);
     this.fileChangeMap.delete(uri.toString());
+    this._onDidChange.fire({
+      type: 'reject',
+      path: uri.fsPath,
+    });
 
     await vscode.commands.executeCommand(
       'setContext',
@@ -628,6 +648,10 @@ export class InlineDiffViewManager
         changes: changes,
       };
       this.fileChangeMap.set(uri.toString(), fileChange);
+      this._onDidChange.fire({
+        type: 'add',
+        path: uri.fsPath,
+      });
 
       // Update context when changes exist
       vscode.commands.executeCommand(
@@ -645,15 +669,23 @@ export class InlineDiffViewManager
     }
   }
 
-  async acceptAllCode(): Promise<void> {
+  async acceptAllFile(): Promise<void> {
     for (const uri of this.fileChangeMap.keys()) {
       await this.acceptAllChanges(vscode.Uri.parse(uri));
     }
   }
 
-  async rejectAllCode(): Promise<void> {
+  async rejectAllFile(): Promise<void> {
     for (const uri of this.fileChangeMap.keys()) {
       await this.rejectAllChanges(vscode.Uri.parse(uri));
     }
+  }
+
+  async acceptFile(path: string): Promise<void> {
+    await this.acceptAllChanges(vscode.Uri.parse(path));
+  }
+
+  async rejectFile(path: string): Promise<void> {
+    await this.rejectAllChanges(vscode.Uri.parse(path));
   }
 }

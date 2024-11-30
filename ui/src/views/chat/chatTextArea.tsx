@@ -40,7 +40,7 @@ import {
   DiffFormat,
   SerializedChatUserMessageChunk,
 } from '../../types';
-import { useDebounceEffect, useMemoizedFn } from 'ahooks';
+import { useDebounceEffect, useMemoizedFn, useHistoryTravel } from 'ahooks';
 import { searchFile, showInfoMessage } from '../../commandApi';
 import { ChatReferenceItemPreview } from './chatReferenceItemPreview';
 import { ChatStatus } from './chatStatus';
@@ -217,12 +217,14 @@ const withMentions = (editor: Editor) => {
   return editor;
 };
 
+const initialValue: Descendant[] = [
+  { type: 'paragraph', children: [{ text: '' }] },
+];
+
 const ChatEditor = forwardRef<{ sendChat: () => void }>(
   function ChatEditor(_props, ref) {
     const editor = useMemo(() => withMentions(withReact(createEditor())), []);
-    const [value, setValue] = useState<Descendant[]>([
-      { type: 'paragraph', children: [{ text: '' }] },
-    ]);
+    const [value, setValue] = useState<Descendant[]>(initialValue);
 
     const currentMode = useRef<'insert' | 'select'>('insert');
 
@@ -245,6 +247,15 @@ const ChatEditor = forwardRef<{ sendChat: () => void }>(
     const sendChatMessage = useChatStore((state) => state.sendChatMessage);
     const addChatReference = useChatStore((state) => state.addChatReference);
 
+    const historyTravel = useHistoryTravel(value);
+
+    useEffect(() => {
+      if (historyTravel.value && historyTravel.value !== value) {
+        setValue(historyTravel.value);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [historyTravel.value]);
+
     useEffect(() => {
       if (target && references.length > 0) {
         const el = document.getElementById('mention-portal');
@@ -264,6 +275,7 @@ const ChatEditor = forwardRef<{ sendChat: () => void }>(
         return;
       }
 
+      historyTravel.setValue(value);
       const content = serialize(editor.children);
       sendChatMessage(content);
       Transforms.delete(editor, {
@@ -274,8 +286,13 @@ const ChatEditor = forwardRef<{ sendChat: () => void }>(
       });
     });
 
+    const setPreviousValue = useMemoizedFn(() => {
+      historyTravel.back();
+    });
+
     useImperativeHandle(ref, () => ({
       sendChat,
+      setPreviousValue,
     }));
 
     useDebounceEffect(

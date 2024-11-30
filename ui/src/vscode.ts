@@ -1,7 +1,11 @@
 import { nanoid } from 'nanoid';
 import useExtensionStore, { ViewType } from './stores/useExtensionStore';
 import { useChatStore } from './stores/useChatStore';
-import { ChatReferenceFileItem, ChatReferenceSnippetItem } from './types';
+import {
+  ChatReferenceFileItem,
+  ChatReferenceSnippetItem,
+  DiffViewChange,
+} from './types';
 
 type Resolver = {
   resolve: (data: unknown) => void;
@@ -79,10 +83,6 @@ addCommandEventListener('new-chat', async () => {
     useExtensionStore.setState({ viewType: 'chat' });
   } else {
     // clear chat history
-    const { serverUrl } = useExtensionStore.getState();
-    await fetch(`${serverUrl}/api/chat`, {
-      method: 'DELETE',
-    });
     useChatStore.getState().clearChat();
   }
 });
@@ -123,4 +123,26 @@ addCommandEventListener('insert-into-chat', ({ data }) => {
     }));
   }
   useExtensionStore.setState({ viewType: 'chat' });
+});
+
+addCommandEventListener('diff-view-change', (params) => {
+  const data = params.data as DiffViewChange;
+  console.debug('diff-view-change', data);
+  useChatStore.setState((state) => {
+    const isExist = state.currentEditFiles.some(
+      (file) => file.path === data.path,
+    );
+    if (isExist) {
+      return {
+        ...state,
+        currentEditFiles: state.currentEditFiles.map((item) =>
+          item.path === data.path ? data : item,
+        ),
+      };
+    }
+    return {
+      ...state,
+      currentEditFiles: [...state.currentEditFiles, data],
+    };
+  });
 });

@@ -15,6 +15,7 @@
     "@radix-ui/react-scroll-area": "^1.2.0",
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/rect": "^1.1.0",
+    "@vscode/codicons": "^0.0.36",
     "@vscode/webview-ui-toolkit": "^1.4.0",
     "ahooks": "^3.8.1",
     "class-variance-authority": "^0.7.0",
