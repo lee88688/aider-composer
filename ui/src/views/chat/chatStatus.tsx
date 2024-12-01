@@ -105,7 +105,10 @@ export function ChatStatus() {
   };
 
   useEffect(() => {
-    if (currentEditFiles.every((file) => file.type !== 'add')) {
+    if (
+      currentEditFiles.length > 0 &&
+      currentEditFiles.every((file) => file.type !== 'add')
+    ) {
       if (isGeneratingCode) {
         cancelGenerateCode();
       } else {
