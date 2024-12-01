@@ -37,6 +37,7 @@
       {
         "command": "aider-composer.GenerateCode",
         "key": "ctrl+shift+k",
+        "mac": "cmd+shift+k",
         "when": "editorTextFocus && !editorReadonly"
       },
       {
