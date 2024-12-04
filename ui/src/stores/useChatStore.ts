@@ -94,7 +94,10 @@ export const useChatSessionStore = create(
               };
             }
 
-            const title = data[0].type === 'user' ? data[0].displayText.trim() : data[0].text.trim();
+            const title =
+              data[0].type === 'user'
+                ? data[0].displayText.trim()
+                : data[0].text.trim();
             return {
               ...state,
               sessions: [
@@ -142,7 +145,7 @@ function formatCurrentChatMessage(
     return `Your task is to generate code for the file \`${options.generateCodeSnippet.path}\` according to the user's request.
 First, read the user's request.
 Next, add the required code **only** on the line directly below the existing code in the file.
-**Do not generate code in any other part of the file. In other words, place the code immediately following the line with "print('hello world')" and nowhere else.**
+**Do not generate code in any other part of the file. In other words, place the code immediately following the line with the code given and nowhere else.**
 The existing code in \`${options.generateCodeSnippet.path}\` is as follows:
 \`\`\`${options.generateCodeSnippet.language}
 ${options.generateCodeSnippet.content.trimEnd()}
