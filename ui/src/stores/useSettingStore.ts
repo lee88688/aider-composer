@@ -3,8 +3,10 @@ import { combine, persist } from 'zustand/middleware';
 import useExtensionStore from './useExtensionStore';
 import { persistSecretStorage } from './lib';
 import { settingMap } from '../views/setting/config';
+import { showErrorMessage } from '../commandApi';
 
 export type ChatModelSetting = {
+  name: string;
   provider: string;
   model: string;
   apiKey: string;
@@ -43,22 +45,44 @@ const useSettingStore = create(
   persist(
     combine(
       {
-        model: {
-          provider: 'openai',
-          model: '',
-          apiKey: '',
-          baseUrl: '',
-        } as ChatModelSetting,
+        current: '',
+        models: [] as ChatModelSetting[],
       },
-      (set) => ({
-        async setSetting(setting: ChatModelSetting) {
+      (set, get) => ({
+        async setSetting(name: string, models: ChatModelSetting[]) {
+          const setting = models.find((item) => item.name === name);
+          if (!setting || !name) {
+            throw new Error('Setting not found');
+          }
+
+          set((state) => ({
+            ...state,
+            current: name,
+            models,
+          }));
+
           await apiSetting(setting);
-          set({ model: setting });
+        },
+        addSetting(setting: ChatModelSetting) {
+          set((state) => ({
+            ...state,
+            models: [...state.models, setting],
+          }));
+        },
+        deleteSetting(name: string) {
+          set((state) => ({
+            ...state,
+            models: state.models.filter((item) => item.name !== name),
+          }));
+        },
+        getCurrentSetting() {
+          return get().models.find((item) => item.name === get().current);
         },
       }),
     ),
     {
       name: 'setting',
+      version: 1,
       storage: persistSecretStorage,
       onRehydrateStorage: () => {
         return (_state, error) => {
@@ -67,6 +91,21 @@ const useSettingStore = create(
           }
           hydratedResolve();
         };
+      },
+      migrate: (state, version) => {
+        console.log('migrate', state, version);
+        if (version === 0) {
+          return {
+            current: 'default',
+            models: [
+              {
+                name: 'default',
+                ...(state as any).model,
+              },
+            ],
+          };
+        }
+        return state;
       },
     },
   ),

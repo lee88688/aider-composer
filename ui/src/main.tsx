@@ -22,8 +22,8 @@ async function main() {
 
   await settingHydratedPromise;
 
-  const setting = useSettingStore.getState().model;
-  if (!setting.apiKey) {
+  const setting = useSettingStore.getState().getCurrentSetting();
+  if (!setting) {
     showErrorMessage('Model setting first.');
     useExtensionStore.setState({ viewType: 'setting' });
   } else {

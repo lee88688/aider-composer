@@ -3,14 +3,26 @@ import {
   VSCodeDropdown,
   VSCodeOption,
   VSCodeTextField,
+  VSCodeDivider,
 } from '@vscode/webview-ui-toolkit/react';
+import { Trash2, Split } from 'lucide-react';
 import styled from '@emotion/styled';
 import { useFormik } from 'formik';
 import { settingMap } from './config';
-import useSettingStore from '../../stores/useSettingStore.ts';
+import useSettingStore, {
+  ChatModelSetting,
+} from '../../stores/useSettingStore.ts';
 import useExtensionStore from '../../stores/useExtensionStore';
 import * as Yup from 'yup';
-import isFunction from 'lodash/isFunction';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { List, ListItem } from '../../components/list.tsx';
 
 const FormItemContainer = styled.div({
   boxSizing: 'border-box',
@@ -28,10 +40,6 @@ const FormItemContainer = styled.div({
     lineHeight: 'normal',
     marginBottom: '2px',
   },
-
-  '& > *': {
-    maxWidth: '300px',
-  },
 });
 
 const ErrorMessage = styled.div({
@@ -39,59 +47,76 @@ const ErrorMessage = styled.div({
   marginTop: '2px',
 });
 
-const schema = Yup.object({
-  provider: Yup.string().required('Provider is required'),
-  model: Yup.string().required('Model is required'),
-  apiKey: Yup.string().required('API Key is required'),
-  baseUrl: Yup.string().when('provider', {
-    is: (provider: string) => settingMap[provider]?.hasBaseUrl,
-    then: (schema) => schema.required('Base URL is required'),
-    otherwise: (schema) => schema.optional(),
-  }),
-});
+type SettingFormRef = {
+  setFormData: (s: ChatModelSetting) => void;
+};
 
-export default function Setting() {
-  const setting = useSettingStore((state) => state.model);
-  const setSetting = useSettingStore((state) => state.setSetting);
-  const setViewType = useExtensionStore((state) => state.setViewType);
+const initialValues = {
+  name: '',
+  provider: 'openai',
+  model: '',
+  apiKey: '',
+  baseUrl: '',
+};
+
+const SettingForm = forwardRef<
+  SettingFormRef,
+  { models: ChatModelSetting[]; onAdd: (s: ChatModelSetting) => void }
+>(function SettingForm(props, ref) {
+  const models = props.models;
+
+  const schema = useMemo(() => {
+    const names = models.map((item) => item.name);
+    return Yup.object({
+      name: Yup.string()
+        .required('Name is required')
+        .test('unique', 'Name already exists', function (value) {
+          return !names.includes(value);
+        }),
+      provider: Yup.string().required('Provider is required'),
+      model: Yup.string().required('Model is required'),
+      apiKey: Yup.string().required('API Key is required'),
+      baseUrl: Yup.string().when('provider', {
+        is: (provider: string) => settingMap[provider]?.hasBaseUrl,
+        then: (schema) => schema.required('Base URL is required'),
+        otherwise: (schema) => schema.optional(),
+      }),
+    });
+  }, [models]);
 
   const formik = useFormik({
-    initialValues: setting,
+    initialValues,
     validationSchema: schema,
     onSubmit: async (values) => {
-      console.log(values);
-      await setSetting(values);
-      setViewType('chat');
+      props.onAdd(values);
+      // formik.setValues(initialValues);
+      formik.resetForm();
     },
   });
+
+  useImperativeHandle(ref, () => ({
+    setFormData: (s: ChatModelSetting) => {
+      formik.setValues(s);
+    },
+  }));
 
   const providerSetting = settingMap[formik.values.provider];
 
   return (
-    <div style={{ padding: '12px' }}>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <h1
-          style={{
-            margin: '10px 0',
-            fontSize: 'calc(var(--vscode-font-size) * 1.5)',
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <FormItemContainer>
+        <label>Name</label>
+        <VSCodeTextField
+          value={formik.values.name}
+          onChange={(e) => {
+            formik.setFieldTouched('name');
+            formik.setFieldValue('name', (e.target as HTMLInputElement).value);
           }}
-        >
-          Settings
-        </h1>
-        <VSCodeButton
-          disabled={formik.isSubmitting}
-          onClick={() => formik.handleSubmit()}
-        >
-          {formik.isSubmitting ? 'Saving' : 'Save'}
-        </VSCodeButton>
-      </div>
+        />
+        {formik.touched.name && formik.errors.name && (
+          <ErrorMessage>{formik.errors.name}</ErrorMessage>
+        )}
+      </FormItemContainer>
 
       <FormItemContainer>
         <label>Provider</label>
@@ -189,6 +214,124 @@ export default function Setting() {
           )}
         </FormItemContainer>
       )}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+        <VSCodeButton onClick={() => formik.handleSubmit()}>Add</VSCodeButton>
+        <VSCodeButton
+          appearance="secondary"
+          onClick={() => {
+            // formik.setValues(initialValues);
+            formik.resetForm();
+          }}
+        >
+          Reset
+        </VSCodeButton>
+      </div>
+    </div>
+  );
+});
+
+export default function Setting() {
+  const models = useSettingStore((state) => state.models);
+  const current = useSettingStore((state) => state.current);
+
+  const setSetting = useSettingStore((state) => state.setSetting);
+  const setViewType = useExtensionStore((state) => state.setViewType);
+
+  const [currentSetting, setCurrentSetting] = useState(current);
+  const [currentModels, setCurrentModels] = useState(models);
+
+  const ref = useRef<SettingFormRef>(null);
+
+  useEffect(() => {
+    if (!currentModels.find((item) => item.name === currentSetting)) {
+      setCurrentSetting(currentModels[0]?.name ?? '');
+    }
+  }, [currentModels, currentSetting]);
+
+  return (
+    <div style={{ padding: '12px' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <h1
+          style={{
+            margin: '10px 0',
+            fontSize: 'calc(var(--vscode-font-size) * 1.5)',
+          }}
+        >
+          Settings
+        </h1>
+        <VSCodeButton
+          onClick={async () => {
+            await setSetting(currentSetting, currentModels);
+            setViewType('chat');
+          }}
+        >
+          Save
+        </VSCodeButton>
+      </div>
+      <FormItemContainer>
+        <label>Current Setting</label>
+        <VSCodeDropdown
+          value={currentSetting}
+          onChange={(e) => {
+            setCurrentSetting((e.target as HTMLSelectElement).value);
+          }}
+        >
+          {currentModels.map((item) => (
+            <VSCodeOption key={item.name} value={item.name}>
+              {item.name}
+            </VSCodeOption>
+          ))}
+        </VSCodeDropdown>
+        <ErrorMessage>
+          {!currentSetting && 'Please select a setting'}
+        </ErrorMessage>
+      </FormItemContainer>
+      <VSCodeDivider />
+      <List>
+        {currentModels.map((item) => {
+          return (
+            <ListItem>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div>{item.name}</div>
+                <div>
+                  <VSCodeButton
+                    title="Fork this setting"
+                    appearance="icon"
+                    style={{ marginRight: '4px' }}
+                    onClick={() => ref.current?.setFormData(item)}
+                  >
+                    <Split />
+                  </VSCodeButton>
+                  <VSCodeButton
+                    title="Delete this setting"
+                    appearance="icon"
+                    onClick={() => {
+                      setCurrentModels(
+                        currentModels.filter((i) => i.name !== item.name),
+                      );
+                    }}
+                  >
+                    <Trash2 />
+                  </VSCodeButton>
+                </div>
+              </div>
+            </ListItem>
+          );
+        })}
+      </List>
+      <VSCodeDivider />
+      <SettingForm
+        ref={ref}
+        onAdd={(s) => setCurrentModels((p) => [...p, s])}
+        models={currentModels}
+      />
     </div>
   );
 }
