@@ -26,7 +26,8 @@ provider_env_map = {
     'openai_compatible': {
         'api_key': 'OPENAI_API_KEY',
         'base_url': 'OPENAI_API_BASE',
-    }
+    },
+    'gemini': 'GEMINI_API_KEY',
 }
 
 
