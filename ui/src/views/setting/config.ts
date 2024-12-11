@@ -31,4 +31,8 @@ export const settingMap: Record<string, SettingMapItem> = {
     model: (model) => `openai/${model}`,
     hasBaseUrl: true,
   },
+  gemini: {
+    model: (model) => `gemini/${model}`,
+    hasBaseUrl: false,
+  },
 };
