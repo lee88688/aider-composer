@@ -1,3 +1,15 @@
+# [1.6.0](https://github.com/lee88688/aider-composer/compare/v1.5.0...v1.6.0) (2024-12-11)
+
+
+### Bug Fixes
+
+* add value to dropdown ([1a5b43c](https://github.com/lee88688/aider-composer/commit/1a5b43c48ddba2b93e1fe8bca8390c0dbb3f2558))
+
+
+### Features
+
+* add gemini model provider ([e6e8e45](https://github.com/lee88688/aider-composer/commit/e6e8e4561e492f0296e4a3d6dc82b8a0391afbe4))
+
 # [1.5.0](https://github.com/lee88688/aider-composer/compare/v1.4.1...v1.5.0) (2024-12-05)
 
 
