@@ -139,6 +139,7 @@ const SettingForm = forwardRef<
           <VSCodeOption value="openai_compatible">
             OpenAI Compatible
           </VSCodeOption>
+          <VSCodeOption value="gemini">Gemini</VSCodeOption>
         </VSCodeDropdown>
       </FormItemContainer>
 
