@@ -253,7 +253,7 @@ class VscodeReactView implements WebviewViewProvider {
             promise = this.webviewReady();
             break;
           case 'search-file':
-            promise = this.findFile(data);
+            promise = this.searchFile(data);
             break;
           case 'write-file':
             promise = this.writeFile(data);
@@ -458,7 +458,7 @@ class VscodeReactView implements WebviewViewProvider {
     return workspaceFolder?.uri.fsPath ?? '';
   }
 
-  private async findFile(data: { query: string; limit?: number }) {
+  private async searchFile(data: { query: string; limit?: number }) {
     if (this.fileListManager.canSearch) {
       const res = await this.fileListManager.searchFiles(
         data.query,
