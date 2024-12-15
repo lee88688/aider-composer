@@ -35,7 +35,11 @@ export default class FileListManager extends Disposables {
     );
   }
 
-  async getFileList(cwd: string) {
+  get canSearch() {
+    return this.fileList.length > 0;
+  }
+
+  async scanFiles(cwd: string) {
     if (this.fileList.length === 0) {
       const { globby } = await import('globby');
       const files = await globby(['**/*'], {
