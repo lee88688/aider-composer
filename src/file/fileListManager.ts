@@ -8,6 +8,7 @@ const normalIgnore = ['**/node_modules', '**/.git', '**/__pycache__'];
 
 export default class FileListManager extends Disposables {
   private fileList: { path: string; fsPath: string; basePath: string }[] = [];
+  private fuse?: Fuse<{ path: string; fsPath: string; basePath: string }>;
 
   constructor() {
     super();
@@ -38,6 +39,14 @@ export default class FileListManager extends Disposables {
     );
   }
 
+  private initFuse() {
+    this.fuse = new Fuse(this.fileList, {
+      ignoreLocation: true,
+      includeScore: true,
+      keys: ['path'],
+    });
+  }
+
   get canSearch() {
     return this.fileList.length > 0;
   }
@@ -47,7 +56,6 @@ export default class FileListManager extends Disposables {
       const files = await globby(['**/*'], {
         ignore: normalIgnore,
         gitignore: true,
-        absolute: true,
         cwd: cwd,
       });
       this.fileList = files.map((file) => ({
@@ -55,17 +63,14 @@ export default class FileListManager extends Disposables {
         fsPath: `${cwd}/${file}`,
         basePath: cwd,
       }));
+      this.initFuse();
     }
     return this.fileList;
   }
 
   async searchFiles(query: string, limit = 20) {
-    const fuse = new Fuse(this.fileList, {
-      threshold: 0.4,
-      ignoreLocation: true,
-      includeScore: true,
-    });
-
-    return fuse.search(query, { limit }).map((result) => result.item);
+    return (
+      this.fuse?.search(query, { limit }).map((result) => result.item) ?? []
+    );
   }
 }
