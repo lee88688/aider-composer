@@ -1,7 +1,10 @@
 import Disposables from '../utils/disposables';
 import * as vscode from 'vscode';
-import Fuse from 'fuse.js/dist/fuse.cjs';
+import Fuse from 'fuse.js';
 import path from 'path';
+import { globby } from 'globby';
+
+const normalIgnore = ['**/node_modules', '**/.git', '**/__pycache__'];
 
 export default class FileListManager extends Disposables {
   private fileList: { path: string; fsPath: string; basePath: string }[] = [];
@@ -41,9 +44,8 @@ export default class FileListManager extends Disposables {
 
   async scanFiles(cwd: string) {
     if (this.fileList.length === 0) {
-      const { globby } = await import('globby');
       const files = await globby(['**/*'], {
-        ignore: ['**/node_modules/**', '**/.git/**'],
+        ignore: normalIgnore,
         gitignore: true,
         absolute: true,
         cwd: cwd,
