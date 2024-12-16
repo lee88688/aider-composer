@@ -188,7 +188,7 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "npm run check-types && node esbuild.js",
+    "compile": "npm run check-types && node esbuild.js --production",
     "check-types": "tsc --noEmit",
     "watch": "cross-env NODE_ENV=development && npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
