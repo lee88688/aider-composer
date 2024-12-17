@@ -16,6 +16,7 @@ import { getNonce } from './utils/getNonce';
 import { isProductionMode } from './utils/isProductionMode';
 import { DiffViewManager } from './diffView';
 import GenerateCodeManager from './generateCode/generateCodeManager';
+import FileListManager from './file/fileListManager';
 
 class VscodeReactView implements WebviewViewProvider {
   public static readonly viewType = 'aider-composer.SidebarProvider';
@@ -36,9 +37,17 @@ class VscodeReactView implements WebviewViewProvider {
     private outputChannel: vscode.LogOutputChannel,
     private diffViewManager: DiffViewManager,
     private generateCodeManager: GenerateCodeManager,
+    private fileListManager: FileListManager,
   ) {
     this.setupPromise = new Promise((resolve) => {
-      this.setupResolve = () => {
+      this.setupResolve = async () => {
+        const cwd = vscode.workspace.workspaceFolders
+          ?.map((folder) => folder.uri.fsPath)
+          .at(0);
+        if (cwd) {
+          await this.fileListManager.scanFiles(cwd);
+        }
+
         this.isReady = true;
         for (const message of this.pendingMessages) {
           this.view?.webview.postMessage(message);
@@ -244,7 +253,7 @@ class VscodeReactView implements WebviewViewProvider {
             promise = this.webviewReady();
             break;
           case 'search-file':
-            promise = this.findFile(data);
+            promise = this.searchFile(data);
             break;
           case 'write-file':
             promise = this.writeFile(data);
@@ -449,7 +458,27 @@ class VscodeReactView implements WebviewViewProvider {
     return workspaceFolder?.uri.fsPath ?? '';
   }
 
-  private findFile(data: { query: string; limit?: number }) {
+  private async searchFile(data: { query: string; limit?: number }) {
+    if (this.fileListManager.canSearch) {
+      const res = await this.fileListManager.searchFiles(
+        data.query,
+        data.limit,
+      );
+      return res.map((item) => {
+        return {
+          id: item.fsPath,
+          type: 'file',
+          name: path.basename(item.fsPath),
+          basePath: item.basePath,
+          path: item.path,
+          fsPath: item.fsPath,
+        };
+      });
+    }
+    return this.fallbackSearchFile(data);
+  }
+
+  private fallbackSearchFile(data: { query: string; limit?: number }) {
     const { query, limit = 20 } = data;
 
     const basePathSet = new Set<string>();

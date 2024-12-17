@@ -188,9 +188,12 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "cross-env NODE_ENV=development && tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
+    "compile": "npm run check-types && node esbuild.js --production",
+    "check-types": "tsc --noEmit",
+    "watch": "cross-env NODE_ENV=development && npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "pretest": "npm run lint",
     "lint": "eslint src",
     "test": "vscode-test",
     "build-ui": "npm run build --prefix ui",
@@ -210,7 +213,9 @@
     "@vscode/test-electron": "^2.4.1",
     "@vscode/vsce": "^3.2.1",
     "cross-env": "^7.0.3",
+    "esbuild": "^0.24.0",
     "eslint": "^9.9.1",
+    "npm-run-all": "^4.1.5",
     "ovsx": "^0.10.1",
     "prettier": "^3.3.3",
     "semantic-release": "^24.2.0",
@@ -218,7 +223,9 @@
   },
   "dependencies": {
     "diff": "^7.0.0",
-    "nanoid": "^3.3.7"
+    "fuse.js": "^7.0.0",
+    "globby": "^14.0.2",
+    "nanoid": "^5.0.9"
   },
   "release": {
     "branches": [

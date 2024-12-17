@@ -7,6 +7,7 @@ import { DiffEditorViewManager } from './diffView/diffEditor';
 import { isProductionMode } from './utils/isProductionMode';
 import { DiffViewManager } from './diffView';
 import GenerateCodeManager from './generateCode/generateCodeManager';
+import FileListManager from './file/fileListManager';
 
 let outputChannel: vscode.LogOutputChannel;
 
@@ -45,12 +46,17 @@ export function activate(context: vscode.ExtensionContext) {
   const generateCodeManager = new GenerateCodeManager(outputChannel);
   context.subscriptions.push(generateCodeManager);
 
+  // file list manager
+  const fileListManager = new FileListManager();
+  context.subscriptions.push(fileListManager);
+
   // webview provider
   const webviewProvider = new VscodeReactView(
     context,
     outputChannel,
     diffViewManager,
     generateCodeManager,
+    fileListManager,
   );
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
