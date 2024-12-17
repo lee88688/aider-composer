@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/lee88688/aider-composer/compare/v1.6.0...v1.7.0) (2024-12-17)
+
+
+### Features
+
+* support fuzzy search file name [#51](https://github.com/lee88688/aider-composer/issues/51) ([a730e57](https://github.com/lee88688/aider-composer/commit/a730e57cacd0de89f57834e22d460aae898b903c))
+
 # [1.6.0](https://github.com/lee88688/aider-composer/compare/v1.5.0...v1.6.0) (2024-12-11)
 
 
