@@ -18,6 +18,34 @@ export default class AiderChatService {
     private outputChannel: vscode.LogOutputChannel,
   ) {}
 
+  private async pythonFilePathFinder(pythonPath: string) {
+    const executableNames =
+      process.platform === 'win32' ? ['python.exe'] : ['python', 'python3'];
+
+    try {
+      await fsPromise.access(pythonPath, fsPromise.constants.X_OK);
+      const file = path.basename(pythonPath);
+      // python path is a file
+      if (executableNames.includes(file)) {
+        return pythonPath;
+      } else {
+        pythonPath = path.dirname(pythonPath);
+      }
+    } catch (e) {
+      // continue
+    }
+
+    for (const executableName of executableNames) {
+      const filePath = path.join(pythonPath, executableName);
+      try {
+        await fsPromise.access(filePath, fsPromise.constants.X_OK);
+        return filePath;
+      } catch (e) {
+        // continue
+      }
+    }
+  }
+
   async start() {
     this.outputChannel.info('Starting aider-chat service...');
 
@@ -29,10 +57,6 @@ export default class AiderChatService {
 
     const config = vscode.workspace.getConfiguration('aider-composer');
     const pythonPath = config.get('pythonPath') as string;
-    const pythonPathFile = path.join(
-      pythonPath,
-      process.platform === 'win32' ? 'python.exe' : 'python',
-    );
     if (!pythonPath) {
       this.outputChannel.info(
         'Python path is not set, skip starting aider-chat service.',
@@ -43,9 +67,8 @@ export default class AiderChatService {
       return Promise.reject();
     }
 
-    try {
-      await fsPromise.access(pythonPathFile, fsPromise.constants.X_OK);
-    } catch (e) {
+    const pythonPathFile = await this.pythonFilePathFinder(pythonPath);
+    if (!pythonPathFile) {
       this.outputChannel.error(
         'Python path does not include python executable, skip starting aider-chat service.',
       );
