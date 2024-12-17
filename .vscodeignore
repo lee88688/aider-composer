@@ -14,3 +14,4 @@ ui/**
 .idea/**
 .aider*
 .aider*/**
+node_modules
