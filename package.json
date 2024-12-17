@@ -193,7 +193,7 @@
     "watch": "cross-env NODE_ENV=development && npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-    "pretest": "npm run compile && npm run lint",
+    "pretest": "npm run lint",
     "lint": "eslint src",
     "test": "vscode-test",
     "build-ui": "npm run build --prefix ui",

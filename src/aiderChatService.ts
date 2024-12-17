@@ -23,14 +23,16 @@ export default class AiderChatService {
       process.platform === 'win32' ? ['python.exe'] : ['python', 'python3'];
 
     try {
-      await fsPromise.access(pythonPath, fsPromise.constants.X_OK);
-      const file = path.basename(pythonPath);
-      // python path is a file
-      if (executableNames.includes(file)) {
-        return pythonPath;
-      } else {
-        pythonPath = path.dirname(pythonPath);
+      const fileOrDir = await fsPromise.stat(pythonPath);
+      if (fileOrDir.isFile()) {
+        const file = path.basename(pythonPath);
+        if (executableNames.includes(file)) {
+          return pythonPath;
+        } else {
+          pythonPath = path.dirname(pythonPath);
+        }
       }
+      // python path is a file
     } catch (e) {
       // continue
     }
