@@ -48,6 +48,17 @@ export default class AiderChatService {
     }
   }
 
+  private async isAiderInstalled(): Promise<boolean> {
+    return new Promise((resolve) => {
+      const which = process.platform === 'win32' ? 'where' : 'which';
+      const aiderProcess = spawn(which, ['aider']);
+
+      aiderProcess.on('close', (code) => {
+        resolve(code === 0);
+      });
+    });
+  }
+
   async start() {
     this.outputChannel.info('Starting aider-chat service...');
 
@@ -125,6 +136,17 @@ export default class AiderChatService {
         }
         if (proxyStrictSSL === false) {
           env.SSL_VERIFY = 'false';
+        }
+
+        const isAiderInstalled = await this.isAiderInstalled();
+        if (!isAiderInstalled) {
+          this.outputChannel.error(
+            'Aider assistant is not installed or not recognized by the system.',
+          );
+          vscode.window.showErrorMessage(
+            'Aider assistant is not installed or not recognized by the system.',
+          );
+          return Promise.reject();
         }
 
         return new Promise<void>((resolve, reject) => {
