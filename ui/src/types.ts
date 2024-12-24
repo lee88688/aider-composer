@@ -55,3 +55,5 @@ export type DiffViewChange = {
   name: string;
   fsPath: string;
 };
+
+export type ChatType = 'ask' | 'code' | 'architect';

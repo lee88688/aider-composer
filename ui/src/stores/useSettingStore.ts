@@ -3,7 +3,6 @@ import { combine, persist } from 'zustand/middleware';
 import useExtensionStore from './useExtensionStore';
 import { persistSecretStorage } from './lib';
 import { settingMap } from '../views/setting/config';
-import { showErrorMessage } from '../commandApi';
 
 export type ChatModelSetting = {
   name: string;
@@ -13,14 +12,26 @@ export type ChatModelSetting = {
   baseUrl: string;
 };
 
-export async function apiSetting(setting: ChatModelSetting) {
+export async function apiSetting(
+  setting: ChatModelSetting,
+  editorModel: ChatModelSetting,
+) {
   const { serverUrl } = useExtensionStore.getState();
 
-  const m = settingMap[setting.provider].model;
-  let model = setting.model;
-  if (typeof m === 'function') {
-    model = m(model);
-  }
+  const convertToApiModel = (s: ChatModelSetting) => {
+    const m = settingMap[s.provider].model;
+    let model = s.model;
+    if (typeof m === 'function') {
+      model = m(model);
+    }
+
+    return {
+      provider: s.provider,
+      model,
+      api_key: s.apiKey,
+      base_url: s.baseUrl,
+    };
+  };
 
   return fetch(`${serverUrl}/api/chat/setting`, {
     method: 'POST',
@@ -28,10 +39,8 @@ export async function apiSetting(setting: ChatModelSetting) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      provider: setting.provider,
-      model,
-      api_key: setting.apiKey,
-      base_url: setting.baseUrl,
+      ...convertToApiModel(setting),
+      editor_model: convertToApiModel(editorModel),
     }),
   });
 }
@@ -46,22 +55,31 @@ const useSettingStore = create(
     combine(
       {
         current: '',
+        editorModel: '',
         models: [] as ChatModelSetting[],
       },
       (set, get) => ({
-        async setSetting(name: string, models: ChatModelSetting[]) {
+        async setSetting(
+          name: string,
+          editorModel: string,
+          models: ChatModelSetting[],
+        ) {
           const setting = models.find((item) => item.name === name);
-          if (!setting || !name) {
+          const editorSetting = models.find(
+            (item) => item.name === editorModel,
+          );
+          if (!setting || !name || !editorSetting) {
             throw new Error('Setting not found');
           }
 
           set((state) => ({
             ...state,
             current: name,
+            editorModel,
             models,
           }));
 
-          await apiSetting(setting);
+          await apiSetting(setting, editorSetting);
         },
         addSetting(setting: ChatModelSetting) {
           set((state) => ({
@@ -78,11 +96,14 @@ const useSettingStore = create(
         getCurrentSetting() {
           return get().models.find((item) => item.name === get().current);
         },
+        getCurrentEditorSetting() {
+          return get().models.find((item) => item.name === get().editorModel);
+        },
       }),
     ),
     {
       name: 'setting',
-      version: 1,
+      version: 2,
       storage: persistSecretStorage,
       onRehydrateStorage: () => {
         return (_state, error) => {
@@ -103,6 +124,11 @@ const useSettingStore = create(
                 ...(state as any).model,
               },
             ],
+          };
+        } else if (version === 1) {
+          return {
+            ...state,
+            editorModel: state.current,
           };
         }
         return state;

@@ -37,6 +37,7 @@ import ToggleGroup from './ToggleGroup';
 import { useChatStore, useChatSettingStore } from '../../stores/useChatStore';
 import {
   ChatReferenceItem,
+  ChatType,
   DiffFormat,
   SerializedChatUserMessageChunk,
 } from '../../types';
@@ -525,18 +526,18 @@ function ChatActionBar(props: { onChatClick: () => void }) {
     >
       <ToggleGroup
         value={chatType}
-        options={['ask', 'code']}
+        options={['ask', 'code', 'architect']}
         defaultValue="ask"
         onChange={(value) => {
           if (!value) return;
-          setChatType(value as 'ask' | 'code');
+          setChatType(value as ChatType);
         }}
       />
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Trigger asChild>
           <div
             style={{
-              display: chatType === 'code' ? 'flex' : 'none',
+              display: chatType === 'ask' ? 'none' : 'flex',
               alignItems: 'center',
               gap: '2px',
               cursor: 'pointer',
