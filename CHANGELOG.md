@@ -1,3 +1,11 @@
+# [1.8.0](https://github.com/lee88688/aider-composer/compare/v1.7.0...v1.8.0) (2024-12-26)
+
+
+### Features
+
+* add architect mode support ([9fc7011](https://github.com/lee88688/aider-composer/commit/9fc7011f8c29a741b3a13d9e40ea4fa3016155b1))
+* architect mode [#54](https://github.com/lee88688/aider-composer/issues/54) ([2ce86a6](https://github.com/lee88688/aider-composer/commit/2ce86a6a48189c210f14ea752f4aede60744a922))
+
 # [1.7.0](https://github.com/lee88688/aider-composer/compare/v1.6.0...v1.7.0) (2024-12-17)
 
 
