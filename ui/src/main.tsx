@@ -23,11 +23,12 @@ async function main() {
   await settingHydratedPromise;
 
   const setting = useSettingStore.getState().getCurrentSetting();
-  if (!setting) {
+  const editorSetting = useSettingStore.getState().getCurrentEditorSetting();
+  if (!setting || !editorSetting) {
     showErrorMessage('Model setting first.');
     useExtensionStore.setState({ viewType: 'setting' });
   } else {
-    await apiSetting(setting);
+    await apiSetting(setting, editorSetting);
     useExtensionStore.setState({ viewType: 'chat' });
   }
 }

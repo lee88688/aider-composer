@@ -234,11 +234,13 @@ const SettingForm = forwardRef<
 export default function Setting() {
   const models = useSettingStore((state) => state.models);
   const current = useSettingStore((state) => state.current);
+  const editorModel = useSettingStore((state) => state.editorModel);
 
   const setSetting = useSettingStore((state) => state.setSetting);
   const setViewType = useExtensionStore((state) => state.setViewType);
 
   const [currentSetting, setCurrentSetting] = useState(current);
+  const [currentEditorModel, setCurrentEditorModel] = useState(editorModel);
   const [currentModels, setCurrentModels] = useState(models);
 
   const ref = useRef<SettingFormRef>(null);
@@ -269,7 +271,7 @@ export default function Setting() {
         </h1>
         <VSCodeButton
           onClick={async () => {
-            await setSetting(currentSetting, currentModels);
+            await setSetting(currentSetting, currentEditorModel, currentModels);
             setViewType('chat');
           }}
         >
@@ -294,6 +296,26 @@ export default function Setting() {
           {!currentSetting && 'Please select a setting'}
         </ErrorMessage>
       </FormItemContainer>
+
+      <FormItemContainer>
+        <label>Editor Model</label>
+        <VSCodeDropdown
+          value={currentEditorModel}
+          onChange={(e) => {
+            setCurrentEditorModel((e.target as HTMLSelectElement).value);
+          }}
+        >
+          {currentModels.map((item) => (
+            <VSCodeOption key={item.name} value={item.name}>
+              {item.name}
+            </VSCodeOption>
+          ))}
+        </VSCodeDropdown>
+        <ErrorMessage>
+          {!currentEditorModel && 'Please select a editor model'}
+        </ErrorMessage>
+      </FormItemContainer>
+
       <VSCodeDivider />
       <List>
         {currentModels.map((item) => {

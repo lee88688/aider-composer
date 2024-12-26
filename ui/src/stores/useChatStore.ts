@@ -11,6 +11,7 @@ import {
   DiffFormat,
   DiffViewChange,
   SerializedChatUserMessageChunk,
+  ChatType,
 } from '../types';
 import { nanoid } from 'nanoid';
 import {
@@ -28,7 +29,7 @@ type ChatChunkMessage = {
 };
 
 type ServerChatPayload = {
-  chat_type: 'ask' | 'code';
+  chat_type: ChatType;
   diff_format: string;
   message: string;
   reference_list: { fs_path: string; readonly: boolean }[];
@@ -48,14 +49,14 @@ export const useChatSettingStore = create(
   persist(
     combine(
       {
-        chatType: 'ask' as 'ask' | 'code',
+        chatType: 'ask' as ChatType,
         diffFormat: DiffFormat.Diff,
       },
       (set) => ({
         setDiffFormat(nextDiffFormat: DiffFormat) {
           set({ diffFormat: nextDiffFormat });
         },
-        setChatType(nextChatType: 'ask' | 'code') {
+        setChatType(nextChatType: ChatType) {
           set({ chatType: nextChatType });
         },
       }),
@@ -138,7 +139,9 @@ function formatCurrentChatMessage(
           `<snippet fileName="${r.name}" language="${r.language}">\n${r.content}\n</snippet>`,
       )
       .join('\n');
-    reference = `the following snippets are available:\n${reference}`;
+    reference = reference
+      ? `the following snippets are available:\n${reference}`
+      : '';
   }
 
   if (options.generateCodeSnippet) {

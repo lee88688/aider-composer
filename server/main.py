@@ -9,11 +9,16 @@ import json
 from threading import Event
 
 @dataclass
-class ChatSetting:
+class ModelSetting:
     provider: str
     api_key: str
     model: str
     base_url: Optional[str] = None
+
+@dataclass
+class ChatSetting:
+    main_model: ModelSetting
+    editor_model: Optional[ModelSetting] = None
 
 provider_env_map = {
     'deepseek': 'DEEPSEEK_API_KEY',
@@ -95,6 +100,8 @@ class CaptureIO(InputOutput):
         # create new file
         if 'Create new file' in question:
             return True
+        elif 'Edit the files' in question:
+            return True
         return False
 
 @dataclass
@@ -109,7 +116,7 @@ class ChatSessionData:
     message: str
     reference_list: List[ChatSessionReference]
 
-ChatModeType = Literal['ask', 'code']
+ChatModeType = Literal['ask', 'code', 'architect']
 
 @dataclass
 class ChatChunkData:
@@ -162,26 +169,37 @@ class ChatSessionManager:
     def update_model(self, setting: ChatSetting):
         if self.setting != setting:
             self.setting = setting
-            model = Model(setting.model)
-            # update os env
-            config = provider_env_map[setting.provider]
+            model = Model(setting.main_model.model)
             
-            if isinstance(config, str):
-                os.environ[config] = setting.api_key
-                
-            # explicitly handle configs that need multiple env variables, like base urls and api keys
-            elif isinstance(config, dict):
-                for key, value in config.items():
-                    os.environ[value] = getattr(setting, key)
+            # Configure main model environment
+            self._configure_model_env(setting.main_model)
+ 
+            # Configure editor model if provided
+            if setting.editor_model:
+                model.editor_model = Model(setting.editor_model.model)
+                self._configure_model_env(setting.editor_model)
+            
             self.coder = Coder.create(from_coder=self.coder, main_model=model)
+    
+    def _configure_model_env(self, setting: ModelSetting):
+        # update os env
+        config = provider_env_map[setting.provider]
+        if isinstance(config, str):
+            os.environ[config] = setting.api_key
+        # explicitly handle configs that need multiple env variables, like base urls and api keys
+        elif isinstance(config, dict):
+            for key, value in config.items():
+                os.environ[value] = getattr(setting, key)
     
     def update_coder(self):
         self.coder = Coder.create(
             from_coder=self.coder,
-            edit_format=self.chat_type if self.chat_type == 'ask' else self.diff_format,
+            edit_format=self.diff_format if self.chat_type == 'code' else self.chat_type,
             fnames=(item.fs_path for item in self.reference_list if not item.readonly),
             read_only_fnames=(item.fs_path for item in self.reference_list if item.readonly),
         )
+        if self.chat_type == 'architect':
+            self.coder.main_model.editor_edit_format = self.diff_format
 
     def chat(self, data: ChatSessionData) -> Iterator[ChatChunkData]:
         need_update_coder = False
@@ -313,6 +331,10 @@ def set_history():
 @app.route('/api/chat/setting', methods=['POST'])
 def update_setting():
     data = request.json
+    # Create ModelSetting instances for both main and editor models
+    data['main_model'] = ModelSetting(**data['main_model'])
+    if 'editor_model' in data and data['editor_model']:
+        data['editor_model'] = ModelSetting(**data['editor_model'])
     setting = ChatSetting(**data)
 
     manager.update_model(setting)
