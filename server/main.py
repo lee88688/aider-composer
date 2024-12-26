@@ -16,7 +16,8 @@ class ModelSetting:
     base_url: Optional[str] = None
 
 @dataclass
-class ChatSetting(ModelSetting):
+class ChatSetting:
+    main_model: ModelSetting
     editor_model: Optional[ModelSetting] = None
 
 provider_env_map = {
@@ -168,10 +169,10 @@ class ChatSessionManager:
     def update_model(self, setting: ChatSetting):
         if self.setting != setting:
             self.setting = setting
-            model = Model(setting.model)
+            model = Model(setting.main_model.model)
             
             # Configure main model environment
-            self._configure_model_env(setting)
+            self._configure_model_env(setting.main_model)
  
             # Configure editor model if provided
             if setting.editor_model:
@@ -330,7 +331,8 @@ def set_history():
 @app.route('/api/chat/setting', methods=['POST'])
 def update_setting():
     data = request.json
-    # Handle nested editor_model if present
+    # Create ModelSetting instances for both main and editor models
+    data['main_model'] = ModelSetting(**data['main_model'])
     if 'editor_model' in data and data['editor_model']:
         data['editor_model'] = ModelSetting(**data['editor_model'])
     setting = ChatSetting(**data)

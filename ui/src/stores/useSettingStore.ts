@@ -39,8 +39,8 @@ export async function apiSetting(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      ...convertToApiModel(setting),
-      editor_model: convertToApiModel(editorModel),
+      main_model: convertToApiModel(setting),
+      editor_model: editorModel ? convertToApiModel(editorModel) : null,
     }),
   });
 }
@@ -126,9 +126,10 @@ const useSettingStore = create(
             ],
           };
         } else if (version === 1) {
+          const v0State = state as any;
           return {
-            ...state,
-            editorModel: state.current,
+            ...v0State,
+            editorModel: v0State.current,
           };
         }
         return state;
