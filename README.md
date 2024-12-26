@@ -8,6 +8,8 @@ It is highly recommended to read the [Requirements](#requirements) and [Extensio
 
 ## 🎉🎉News🎉🎉
 
+- [Architect Mode](#architect-mode), Note: the `editor` part will not show in the chat area. so you will see nothing after the `architect` part.
+  ![architect-mode](./resources/architect-mode.gif)
 - [Multiple Models Support](#multiple-models)
 - [Generate Code Mode](#generate-code)
   ![generate-code](./resources/generate-code.gif)
@@ -53,10 +55,17 @@ This extension contributes the following setting:
 
 Aider supports five chat modes: `ask`, `diff`, `diff-fenced`, `udiff`, and `whole`. In this extension, you can switch between them by clicking the mode name in the chat input area.
 
-The chat modes are divided into two groups: `ask` and `code`.
+The chat modes are divided into three groups: `ask`, `code` and `architect`.
 
 - `ask` mode is for general questions and will not modify any files
 - `code` mode includes all other chat modes and is used for code modifications. The optimal chat mode may vary depending on your LLM model and programming language. For more information, refer to [Aider's leaderboards](https://aider.chat/docs/leaderboards/).
+- `architect` mode splits the chat into two parts: `architect` and `editor`. The `architect` part is used for describing how to solve the coding problem and will not modify any files. The `editor` part is used for code modifications.
+
+#### Architect Mode
+
+To use `architect` mode, you need to set `Editor Model` in the settings page. And there is a limitation because of `aider-chat`'s implementation. The `editor` will not show in the chat area. So you will see nothing after the `architect` part as shown below.
+
+![architect-mode](./resources/architect-mode.gif)
 
 #### Tips
 
