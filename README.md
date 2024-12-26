@@ -65,6 +65,8 @@ The chat modes are divided into three groups: `ask`, `code` and `architect`.
 
 To use `architect` mode, you need to set `Editor Model` in the settings page. And there is a limitation because of `aider-chat`'s implementation. The `editor` will not show in the chat area. So you will see nothing after the `architect` part as shown below.
 
+For more information about `architect` mode, please refer to [Aider's documentation](https://aider.chat/2024/09/26/architect.html).
+
 ![architect-mode](./resources/architect-mode.gif)
 
 #### Tips
