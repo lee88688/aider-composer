@@ -310,7 +310,8 @@ def sse():
                 yield f"event: {msg.event}\n"
                 yield f"data: {json.dumps(msg.data)}\n\n"
             else:
-                yield f"event: {msg.event}\n\n"
+                yield f"event: {msg.event}\n"
+                yield f"data:\n\n"
 
     response = Response(generate(), mimetype='text/event-stream')
     return response

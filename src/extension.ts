@@ -50,6 +50,9 @@ export function activate(context: vscode.ExtensionContext) {
   const fileListManager = new FileListManager();
   context.subscriptions.push(fileListManager);
 
+  // aider chat service
+  const aiderChatService = new AiderChatService(context, outputChannel);
+
   // webview provider
   const webviewProvider = new VscodeReactView(
     context,
@@ -57,6 +60,7 @@ export function activate(context: vscode.ExtensionContext) {
     diffViewManager,
     generateCodeManager,
     fileListManager,
+    aiderChatService,
   );
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
@@ -102,14 +106,13 @@ export function activate(context: vscode.ExtensionContext) {
     }),
   );
 
-  const aiderChatService = new AiderChatService(context, outputChannel);
-
   aiderChatService.onStarted = () => {
     vscode.commands.executeCommand(
       'setContext',
       'aider-composer.Started',
       true,
     );
+    // todo: remove this logic
     webviewProvider.serverStarted(`http://127.0.0.1:${aiderChatService.port}`);
     const activeEditor = vscode.window.activeTextEditor;
     if (activeEditor) {

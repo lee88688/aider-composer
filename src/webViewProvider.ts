@@ -17,6 +17,7 @@ import { isProductionMode } from './utils/isProductionMode';
 import { DiffViewManager } from './diffView';
 import GenerateCodeManager from './generateCode/generateCodeManager';
 import FileListManager from './file/fileListManager';
+import AiderChatService from './aiderChatService';
 
 class VscodeReactView implements WebviewViewProvider {
   public static readonly viewType = 'aider-composer.SidebarProvider';
@@ -38,6 +39,7 @@ class VscodeReactView implements WebviewViewProvider {
     private diffViewManager: DiffViewManager,
     private generateCodeManager: GenerateCodeManager,
     private fileListManager: FileListManager,
+    private chatService: AiderChatService,
   ) {
     this.setupPromise = new Promise((resolve) => {
       this.setupResolve = async () => {
@@ -247,11 +249,34 @@ class VscodeReactView implements WebviewViewProvider {
         const command = message.command;
         const data = message.data;
 
+        const chunkCallback = (data: unknown) => {
+          this.postMessageToWebview({
+            // this should use same id, otherwise chunk data will be lost
+            id: message.id,
+            command: 'chunk',
+            data,
+          });
+        };
         let promise: Promise<any> | any;
         switch (command) {
           case 'webview-ready':
             promise = this.webviewReady();
             break;
+
+          // api call
+          case 'api-chat':
+            promise = this.chatService.apiChat(data, chunkCallback);
+            break;
+          case 'api-clear-chat':
+            promise = this.chatService.apiClearChat();
+            break;
+          case 'api-save-session':
+            promise = this.chatService.apiSaveSession(data);
+            break;
+          case 'api-chat-setting':
+            promise = this.chatService.apiChatSetting(data);
+            break;
+
           case 'search-file':
             promise = this.searchFile(data);
             break;

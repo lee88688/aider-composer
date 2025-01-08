@@ -4,6 +4,8 @@ import * as path from 'node:path';
 import * as readline from 'node:readline';
 import * as vscode from 'vscode';
 import { isProductionMode } from './utils/isProductionMode';
+import { EventSourceParserStream } from 'eventsource-parser/stream';
+import { createEventSource } from 'eventsource-client';
 
 export default class AiderChatService {
   private aiderChatProcess: ChildProcess | undefined;
@@ -227,5 +229,94 @@ export default class AiderChatService {
     this.outputChannel.info('Stopping aider-chat service...');
     this.aiderChatProcess?.kill();
     this.aiderChatProcess = undefined;
+  }
+
+  get serviceUrl() {
+    return `http://127.0.0.1:${this.port}`;
+  }
+
+  async apiChat(
+    payload: unknown,
+    chunkCallback: (data: { name?: string; data: unknown }) => void,
+  ) {
+    const res = await fetch(`${this.serviceUrl}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const stream = res.body
+      ?.pipeThrough(new TextDecoderStream())
+      .pipeThrough(new EventSourceParserStream());
+
+    if (!stream) {
+      return;
+    }
+
+    // eventsource-client has reconnect logic and it can't be cancelled
+    // const stream = createEventSource({
+    //   url: `${this.serviceUrl}/api/chat`,
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify(payload),
+    // });
+
+    try {
+      for await (const event of stream) {
+        console.log('chunk', event);
+        chunkCallback({
+          name: event.event,
+          data:
+            typeof event.data === 'string' && event.data
+              ? JSON.parse(event.data)
+              : event.data,
+        });
+        if (event.event === 'end' || event.event === 'error') {
+          break;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      chunkCallback({
+        name: 'error',
+        data: {
+          error: `${e}`,
+        },
+      });
+    }
+
+    console.log('api chat end');
+
+    // stream.close();
+  }
+
+  async apiClearChat() {
+    await fetch(`${this.serviceUrl}/api/chat`, {
+      method: 'DELETE',
+    });
+  }
+
+  async apiSaveSession(payload: unknown) {
+    await fetch(`${this.serviceUrl}/api/chat/session`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async apiChatSetting(payload: unknown) {
+    await fetch(`${this.serviceUrl}/api/chat/setting`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
   }
 }

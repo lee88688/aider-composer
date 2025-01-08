@@ -15,6 +15,7 @@ import {
 } from '../types';
 import { nanoid } from 'nanoid';
 import {
+  apiChat,
   cancelGenerateCode,
   logToOutput,
   showErrorMessage,
@@ -273,7 +274,7 @@ export const useChatStore = create(
           };
         });
       },
-      sendChatMessage(messageChunks: SerializedChatUserMessageChunk[]) {
+      async sendChatMessage(messageChunks: SerializedChatUserMessageChunk[]) {
         // this message is input by user
         const inputMessage = messageChunks
           .map((item) =>
@@ -333,56 +334,6 @@ export const useChatStore = create(
 
         const { chatType, diffFormat } = useChatSettingStore.getState();
 
-        const eventSource = new SSE(`${serverUrl}/api/chat`, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          payload: JSON.stringify({
-            chat_type: chatType,
-            diff_format: diffFormat,
-            message: message,
-            reference_list: referenceList,
-          } satisfies ServerChatPayload),
-        });
-
-        set({ currentChatRequest: eventSource });
-
-        eventSource.addEventListener('data', (event: { data: string }) => {
-          const chunkMessage = JSON.parse(event.data) as ChatChunkMessage;
-          set((state) => ({
-            ...state,
-            current: state.current
-              ? {
-                  ...state.current,
-                  text: (state.current?.text ?? '') + chunkMessage.chunk,
-                }
-              : state.current,
-          }));
-        });
-
-        eventSource.addEventListener('usage', (event: { data: string }) => {
-          const usage = JSON.parse(event.data) as { usage: string };
-          set((state) => ({
-            ...state,
-            current: state.current
-              ? {
-                  ...state.current,
-                  usage: usage.usage,
-                }
-              : state.current,
-          }));
-        });
-
-        eventSource.addEventListener('write', (event: { data: string }) => {
-          const writeParams = JSON.parse(event.data) as {
-            write: Record<string, string>;
-          };
-
-          for (const [path, content] of Object.entries(writeParams.write)) {
-            writeFile({ path, content });
-          }
-        });
-
         const end = () => {
           if (!get().current) {
             return;
@@ -407,72 +358,235 @@ export const useChatStore = create(
           });
         };
 
-        eventSource.addEventListener('reflected', (event: { data: string }) => {
-          const reflectedMessage = JSON.parse(event.data) as {
-            message: string;
-          };
-          // reflected message is a user message
-          set((state) => {
-            const history = state.current
-              ? [...state.history, state.current]
-              : [...state.history];
-            history.push({
-              type: 'user',
-              text: reflectedMessage.message,
-              displayText: reflectedMessage.message,
-              id: nanoid(),
-              reflected: true,
-              referenceList: state.chatReferenceList,
-            });
+        const payload = {
+          chat_type: chatType,
+          diff_format: diffFormat,
+          message: message,
+          reference_list: referenceList,
+        } satisfies ServerChatPayload;
 
-            // generate code do not store in session
-            if (!state.generateCodeSnippet) {
-              const id = state.id;
-              useChatSessionStore.getState().addSession(id, history);
+        const stream = apiChat(payload);
+
+        for await (const chunk of stream) {
+          console.log('chunk', chunk);
+          switch (chunk.name) {
+            case 'data': {
+              const chunkMessage = chunk.data as ChatChunkMessage;
+              set((state) => ({
+                ...state,
+                current: state.current
+                  ? {
+                      ...state.current,
+                      text: (state.current?.text ?? '') + chunkMessage.chunk,
+                    }
+                  : state.current,
+              }));
+              break;
             }
 
-            // create new assistant message for next round
-            return {
-              ...state,
-              history,
-              current: {
-                id: nanoid(),
-                text: '',
-                type: 'assistant',
-              },
-            };
-          });
-          logToOutput('info', `reflected message: ${reflectedMessage.message}`);
-        });
+            case 'usage': {
+              const usage = chunk.data as { usage: string };
+              set((state) => ({
+                ...state,
+                current: state.current
+                  ? {
+                      ...state.current,
+                      usage: usage.usage,
+                    }
+                  : state.current,
+              }));
+              break;
+            }
 
-        eventSource.addEventListener('log', (event: { data: string }) => {
-          const logMessage = JSON.parse(event.data) as { message: string };
-          logToOutput('info', `server log: ${logMessage.message}`);
-        });
+            case 'write': {
+              const writeParams = chunk.data as {
+                write: Record<string, string>;
+              };
+              for (const [path, content] of Object.entries(writeParams.write)) {
+                writeFile({ path, content });
+              }
+              break;
+            }
 
-        eventSource.addEventListener('end', () => {
-          end();
-          eventSource.close();
-        });
+            case 'reflected': {
+              const reflectedMessage = chunk.data as {
+                message: string;
+              };
+              // reflected message is a user message
+              set((state) => {
+                const history = state.current
+                  ? [...state.history, state.current]
+                  : [...state.history];
+                history.push({
+                  type: 'user',
+                  text: reflectedMessage.message,
+                  displayText: reflectedMessage.message,
+                  id: nanoid(),
+                  reflected: true,
+                  referenceList: state.chatReferenceList,
+                });
 
-        eventSource.addEventListener('error', (event: { data: string }) => {
-          const errorData = JSON.parse(event.data) as { error: string };
-          logToOutput('error', `server error: ${errorData.error}`);
-          showErrorMessage(errorData.error);
-        });
+                // generate code do not store in session
+                if (!state.generateCodeSnippet) {
+                  const id = state.id;
+                  useChatSessionStore.getState().addSession(id, history);
+                }
 
-        eventSource.onerror = (event: SSEvent) => {
-          // todo: should deal with current, currently only deal with end event
-          console.log('error', event);
-          if ((event.target as SSE | null)?.readyState === EventSource.CLOSED) {
-            console.log('EventSource connection closed');
-            // deal with end event
-          } else {
-            console.error('EventSource error:', event);
+                // create new assistant message for next round
+                return {
+                  ...state,
+                  history,
+                  current: {
+                    id: nanoid(),
+                    text: '',
+                    type: 'assistant',
+                  },
+                };
+              });
+              logToOutput(
+                'info',
+                `reflected message: ${reflectedMessage.message}`,
+              );
+              break;
+            }
+
+            case 'log': {
+              const logMessage = chunk.data as { message: string };
+              logToOutput('info', `server log: ${logMessage.message}`);
+              break;
+            }
+
+            case 'end': {
+              break;
+            }
+
+            case 'error': {
+              const errorData = chunk.data as { error: string };
+              logToOutput('error', `server error: ${errorData.error}`);
+              showErrorMessage(errorData.error);
+              break;
+            }
+
+            default:
+              break;
           }
-          end();
-          eventSource.close();
-        };
+        }
+
+        console.log('chat end');
+
+        end();
+
+        // const eventSource = new SSE(`${serverUrl}/api/chat`, {
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //   },
+        //   payload,
+        // });
+
+        // set({ currentChatRequest: eventSource });
+
+        // eventSource.addEventListener('data', (event: { data: string }) => {
+        //   const chunkMessage = JSON.parse(event.data) as ChatChunkMessage;
+        //   set((state) => ({
+        //     ...state,
+        //     current: state.current
+        //       ? {
+        //           ...state.current,
+        //           text: (state.current?.text ?? '') + chunkMessage.chunk,
+        //         }
+        //       : state.current,
+        //   }));
+        // });
+
+        // eventSource.addEventListener('usage', (event: { data: string }) => {
+        //   const usage = JSON.parse(event.data) as { usage: string };
+        //   set((state) => ({
+        //     ...state,
+        //     current: state.current
+        //       ? {
+        //           ...state.current,
+        //           usage: usage.usage,
+        //         }
+        //       : state.current,
+        //   }));
+        // });
+
+        // eventSource.addEventListener('write', (event: { data: string }) => {
+        //   const writeParams = JSON.parse(event.data) as {
+        //     write: Record<string, string>;
+        //   };
+
+        //   for (const [path, content] of Object.entries(writeParams.write)) {
+        //     writeFile({ path, content });
+        //   }
+        // });
+
+        // eventSource.addEventListener('reflected', (event: { data: string }) => {
+        //   const reflectedMessage = JSON.parse(event.data) as {
+        //     message: string;
+        //   };
+        //   // reflected message is a user message
+        //   set((state) => {
+        //     const history = state.current
+        //       ? [...state.history, state.current]
+        //       : [...state.history];
+        //     history.push({
+        //       type: 'user',
+        //       text: reflectedMessage.message,
+        //       displayText: reflectedMessage.message,
+        //       id: nanoid(),
+        //       reflected: true,
+        //       referenceList: state.chatReferenceList,
+        //     });
+
+        //     // generate code do not store in session
+        //     if (!state.generateCodeSnippet) {
+        //       const id = state.id;
+        //       useChatSessionStore.getState().addSession(id, history);
+        //     }
+
+        //     // create new assistant message for next round
+        //     return {
+        //       ...state,
+        //       history,
+        //       current: {
+        //         id: nanoid(),
+        //         text: '',
+        //         type: 'assistant',
+        //       },
+        //     };
+        //   });
+        //   logToOutput('info', `reflected message: ${reflectedMessage.message}`);
+        // });
+
+        // eventSource.addEventListener('log', (event: { data: string }) => {
+        //   const logMessage = JSON.parse(event.data) as { message: string };
+        //   logToOutput('info', `server log: ${logMessage.message}`);
+        // });
+
+        // eventSource.addEventListener('end', () => {
+        //   end();
+        //   eventSource.close();
+        // });
+
+        // eventSource.addEventListener('error', (event: { data: string }) => {
+        //   const errorData = JSON.parse(event.data) as { error: string };
+        //   logToOutput('error', `server error: ${errorData.error}`);
+        //   showErrorMessage(errorData.error);
+        // });
+
+        // eventSource.onerror = (event: SSEvent) => {
+        //   // todo: should deal with current, currently only deal with end event
+        //   console.log('error', event);
+        //   if ((event.target as SSE | null)?.readyState === EventSource.CLOSED) {
+        //     console.log('EventSource connection closed');
+        //     // deal with end event
+        //   } else {
+        //     console.error('EventSource error:', event);
+        //   }
+        //   end();
+        //   eventSource.close();
+        // };
       },
       cancelChat() {
         get().currentChatRequest?.close();
