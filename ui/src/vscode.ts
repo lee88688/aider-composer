@@ -84,6 +84,7 @@ export function callCommand(
   // use array to void data loss
   const chunkData: any[] = [];
 
+  let stop = false;
   const gen = (async function* () {
     while (true) {
       // wait for chunk
@@ -92,6 +93,9 @@ export function callCommand(
       });
       while (chunkData.length > 0) {
         yield chunkData.shift();
+      }
+      if (stop) {
+        return;
       }
     }
   })();
@@ -105,6 +109,8 @@ export function callCommand(
   };
 
   const resolve = (data: any) => {
+    chunkResolve?.();
+    stop = true;
     gen.return(data);
   };
 

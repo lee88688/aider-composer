@@ -9,6 +9,7 @@ import { createEventSource } from 'eventsource-client';
 
 export default class AiderChatService {
   private aiderChatProcess: ChildProcess | undefined;
+  private isDev = false;
 
   port: number = 0;
 
@@ -18,7 +19,9 @@ export default class AiderChatService {
   constructor(
     private context: vscode.ExtensionContext,
     private outputChannel: vscode.LogOutputChannel,
-  ) {}
+  ) {
+    this.isDev = !isProductionMode(context);
+  }
 
   private async pythonFilePathFinder(pythonPath: string) {
     const executableNames =
@@ -267,7 +270,9 @@ export default class AiderChatService {
 
     try {
       for await (const event of stream) {
-        console.log('chunk', event);
+        if (this.isDev) {
+          console.log('chunk', event);
+        }
         chunkCallback({
           name: event.event,
           data:
@@ -288,9 +293,6 @@ export default class AiderChatService {
         },
       });
     }
-
-    console.log('api chat end');
-
     // stream.close();
   }
 

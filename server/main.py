@@ -228,7 +228,8 @@ class ChatSessionManager:
                     yield ChatChunkData(event='data', data=data)
 
                 if manager.coder.usage_report:
-                    yield ChatChunkData(event='usage', data=manager.coder.usage_report)
+                    data = { "usage": manager.coder.usage_report }
+                    yield ChatChunkData(event='usage', data=data)
                 
                 if not self.coder.reflected_message:
                     break

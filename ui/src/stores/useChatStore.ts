@@ -1,7 +1,7 @@
 import pick from 'lodash/pick';
 import { create } from 'zustand';
 import { combine, persist } from 'zustand/middleware';
-import { SSE, SSEvent } from 'sse.js';
+import { SSE } from 'sse.js';
 import {
   ChatAssistantMessage,
   ChatMessage,
@@ -330,7 +330,7 @@ export const useChatStore = create(
           });
         }
 
-        const { serverUrl } = useExtensionStore.getState();
+        // const { serverUrl } = useExtensionStore.getState();
 
         const { chatType, diffFormat } = useChatSettingStore.getState();
 
@@ -471,8 +471,6 @@ export const useChatStore = create(
               break;
           }
         }
-
-        console.log('chat end');
 
         end();
 
