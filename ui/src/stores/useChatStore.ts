@@ -16,12 +16,13 @@ import {
 import { nanoid } from 'nanoid';
 import {
   apiChat,
+  apiClearChat,
+  apiSaveSession,
   cancelGenerateCode,
   logToOutput,
   showErrorMessage,
   writeFile,
 } from '../commandApi';
-import useExtensionStore from './useExtensionStore';
 import { persistStorage } from './lib';
 
 // sse api 返回的类型
@@ -192,10 +193,7 @@ export const useChatStore = create(
     },
     (set, get) => ({
       async clearChat() {
-        const { serverUrl } = useExtensionStore.getState();
-        await fetch(`${serverUrl}/api/chat`, {
-          method: 'DELETE',
-        });
+        await apiClearChat();
         set({
           id: nanoid(),
           history: [],
@@ -603,16 +601,9 @@ export async function setChatSession(id: string) {
     return;
   }
 
-  const { serverUrl } = useExtensionStore.getState();
-  await fetch(`${serverUrl}/api/chat/session`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(
-      session.data.map((m) => ({ role: m.type, content: m.text })),
-    ),
-  });
+  await apiSaveSession(
+    session.data.map((m) => ({ role: m.type, content: m.text })),
+  );
 
   useChatStore.setState({ id, history: session.data, current: undefined });
 }
