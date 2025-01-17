@@ -1,7 +1,7 @@
 import { Plus, X } from 'lucide-react';
 import styled from '@emotion/styled';
 import { css } from '@emotion/css';
-import { MouseEventHandler, useState } from 'react';
+import { MouseEventHandler, useMemo, useState } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { List, ListItem } from '../../components/list';
 import { getOpenedFiles, searchFile } from '../../commandApi';
@@ -170,6 +170,12 @@ export default function ChatFileList() {
   );
 
   const chatReferenceList = useChatStore((state) => state.chatReferenceList);
+  const displayedChatReferenceList = useMemo(() => {
+    return chatReferenceList.filter(
+      (reference) => reference.id !== currentEditorReference?.id,
+    );
+  }, [chatReferenceList, currentEditorReference?.id]);
+
   const removeChatReference = useChatStore(
     (state) => state.removeChatReference,
   );
@@ -234,7 +240,7 @@ export default function ChatFileList() {
           onClose={() => removeChatReference(currentEditorReference)}
         />
       )}
-      {chatReferenceList.map((reference, index) => (
+      {displayedChatReferenceList.map((reference, index) => (
         <FileItem
           key={`${reference.path}-${index}`}
           {...reference}

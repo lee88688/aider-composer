@@ -60,7 +60,7 @@ export default class FileListManager extends Disposables {
       });
       this.fileList = files.map((file) => ({
         path: file,
-        fsPath: `${cwd}/${file}`,
+        fsPath: path.join(cwd, file),
         basePath: cwd,
       }));
       this.initFuse();

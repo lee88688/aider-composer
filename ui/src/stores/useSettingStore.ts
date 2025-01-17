@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { combine, persist } from 'zustand/middleware';
-import useExtensionStore from './useExtensionStore';
 import { persistSecretStorage } from './lib';
 import { settingMap } from '../views/setting/config';
+import { apiChatSetting } from '../commandApi';
 
 export type ChatModelSetting = {
   name: string;
@@ -16,8 +16,6 @@ export async function apiSetting(
   setting: ChatModelSetting,
   editorModel: ChatModelSetting,
 ) {
-  const { serverUrl } = useExtensionStore.getState();
-
   const convertToApiModel = (s: ChatModelSetting) => {
     const m = settingMap[s.provider].model;
     let model = s.model;
@@ -33,15 +31,9 @@ export async function apiSetting(
     };
   };
 
-  return fetch(`${serverUrl}/api/chat/setting`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      main_model: convertToApiModel(setting),
-      editor_model: editorModel ? convertToApiModel(editorModel) : null,
-    }),
+  return apiChatSetting({
+    main_model: convertToApiModel(setting),
+    editor_model: editorModel ? convertToApiModel(editorModel) : null,
   });
 }
 

@@ -15,6 +15,26 @@ export function writeFile(params: { path: string; content: string }) {
   return callCommand('write-file', params);
 }
 
+// chat api calls
+
+export function apiChat(payload: unknown) {
+  return callCommand<{ name: string; data: unknown }>('api-chat', payload, {
+    stream: true,
+  });
+}
+
+export function apiClearChat() {
+  return callCommand('api-clear-chat', null);
+}
+
+export function apiSaveSession(payload: unknown) {
+  return callCommand('api-save-session', payload);
+}
+
+export function apiChatSetting(payload: unknown) {
+  return callCommand('api-chat-setting', payload);
+}
+
 // accept/reject file
 
 /**

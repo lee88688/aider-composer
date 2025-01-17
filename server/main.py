@@ -1,12 +1,50 @@
 from typing import Dict, Iterator, List, Optional, Literal, Any
 from flask import Flask, jsonify, request, Response
 from aider.models import Model
-from aider.coders import Coder
+from aider.coders import Coder, ArchitectCoder
 from aider.io import InputOutput
 from dataclasses import dataclass, asdict
 import os
 import json
-from threading import Event
+from threading import Event, Thread
+from queue import Queue
+
+@dataclass
+class ChatChunkData:
+    # event: data, usage, write, end, error, reflected, log, editor
+    # data: yield chunk message
+    # usage: yield usage report
+    # write: yield write files
+    # end: end of chat
+    # error: yield error message
+    # reflected: yield reflected message
+    # log: yield log message
+    # editor: editor start working
+    event: str
+    data: Optional[dict] = None
+
+# patch Coder
+def on_data_update(self, fn):
+    self.on_data_update = fn
+
+def emit_data_update(self, data):
+    if self.on_data_update:
+        self.on_data_update(data)
+
+Coder.on_data_update = on_data_update
+Coder.emit_data_update = emit_data_update
+
+# patch ArchitectCoder
+original_reply_completed = ArchitectCoder.reply_completed
+def reply_completed(self):
+    self.emit_data_update(ChatChunkData(event='editor-start'))
+    result = original_reply_completed(self)
+    self.emit_data_update(ChatChunkData(event='editor-end'))
+    return result
+
+
+ArchitectCoder.reply_completed = reply_completed
+
 
 @dataclass
 class ModelSetting:
@@ -118,25 +156,14 @@ class ChatSessionData:
 
 ChatModeType = Literal['ask', 'code', 'architect']
 
-@dataclass
-class ChatChunkData:
-    # event: data, usage, write, end, error, reflected, log
-    # data: yield chunk message
-    # usage: yield usage report
-    # write: yield write files
-    # end: end of chat
-    # error: yield error message
-    # reflected: yield reflected message
-    # log: yield log message
-    event: str
-    data: Optional[dict] = None
-
 class ChatSessionManager:
     chat_type: ChatModeType
     diff_format: str
     reference_list: List[ChatSessionReference]
     setting: Optional[ChatSetting] = None
     confirm_ask_result: Optional[Any] = None
+
+    coder: Coder
 
     def __init__(self):
         model = Model('gpt-4o')
@@ -158,13 +185,18 @@ class ChatSessionManager:
         coder.yield_stream = True
         coder.stream = True
         coder.pretty = False
-
         self.coder = coder
+        self._update_patch_coder()
+
         self.chat_type = 'ask'
         self.diff_format = 'diff'
         self.reference_list = []
 
         self.confirm_ask_event = Event()
+        self.queue = Queue()
+    
+    def _update_patch_coder(self):
+        self.coder.on_data_update(lambda data: self.queue.put(data))
 
     def update_model(self, setting: ChatSetting):
         if self.setting != setting:
@@ -201,6 +233,8 @@ class ChatSessionManager:
         if self.chat_type == 'architect':
             self.coder.main_model.editor_edit_format = self.diff_format
 
+        self._update_patch_coder()
+
     def chat(self, data: ChatSessionData) -> Iterator[ChatChunkData]:
         need_update_coder = False
         data.reference_list.sort(key=lambda x: x.fs_path)
@@ -216,56 +250,69 @@ class ChatSessionManager:
         if need_update_coder:
             self.update_coder()
         
+        # Start coder thread
+        thread = Thread(target=self._coder_thread, args=(data.message,))
+        thread.start()
+
+        # Yield data from queue
+        while True:
+            chunk = self.queue.get()
+            yield chunk
+            if chunk.event == 'end':
+                break
+
+    def _coder_thread(self, message: str):
         try:
             self.coder.init_before_message()
-            message = data.message
             while message:
                 self.coder.reflected_message = None
                 for msg in self.coder.run_stream(message):
                     data = {
                         "chunk": msg,
                     }
-                    yield ChatChunkData(event='data', data=data)
+                    self.queue.put(ChatChunkData(event='data', data=data))
 
-                if manager.coder.usage_report:
-                    yield ChatChunkData(event='usage', data=manager.coder.usage_report)
+                if self.coder.usage_report:
+                    data = { "usage": self.coder.usage_report }
+                    self.queue.put(ChatChunkData(event='usage', data=data))
                 
                 if not self.coder.reflected_message:
                     break
 
                 if self.coder.num_reflections >= self.coder.max_reflections:
                     self.coder.io.tool_warning(f"Only {self.coder.max_reflections} reflections allowed, stopping.")
-                    return
+                    break
 
                 self.coder.num_reflections += 1
                 message = self.coder.reflected_message
 
-                yield ChatChunkData(event='reflected', data={"message": message})
+                self.queue.put(ChatChunkData(event='reflected', data={"message": message}))
 
                 error_lines = self.coder.io.get_captured_error_lines()
                 if error_lines:
                     if not message:
                         raise Exception('\n'.join(error_lines))
                     else:
-                        yield ChatChunkData(event='log', data={"message": '\n'.join(error_lines)})
+                        self.queue.put(ChatChunkData(event='log', data={"message": '\n'.join(error_lines)}))
 
             # get write files
-            write_files = manager.io.get_captured_write_files()
+            write_files = self.io.get_captured_write_files()
             if write_files:
                 data = {
                     "write": write_files,
                 }
-                yield ChatChunkData(event='write', data=data)
+                self.queue.put(ChatChunkData(event='write', data=data))
 
         except Exception as e:
             # send error to client
             error_data = {
                 "error": str(e)
             }
-            yield ChatChunkData(event='error', data=error_data)
+            self.queue.put(ChatChunkData(event='error', data=error_data))
         finally:
             # send end event to client
-            yield ChatChunkData(event='end')
+            self.queue.put(ChatChunkData(event='end'))
+
     
     def confirm_ask(self):
         self.confirm_ask_event.clear()
@@ -310,7 +357,8 @@ def sse():
                 yield f"event: {msg.event}\n"
                 yield f"data: {json.dumps(msg.data)}\n\n"
             else:
-                yield f"event: {msg.event}\n\n"
+                yield f"event: {msg.event}\n"
+                yield f"data:\n\n"
 
     response = Response(generate(), mimetype='text/event-stream')
     return response

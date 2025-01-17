@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { nanoid } from 'nanoid';
 import useExtensionStore, { ViewType } from './stores/useExtensionStore';
 import { useChatStore } from './stores/useChatStore';
@@ -10,6 +11,7 @@ import {
 type Resolver = {
   resolve: (data: unknown) => void;
   reject: (error: unknown) => void;
+  chunk?: (data: unknown) => void;
 };
 
 type EventListener = (data: {
@@ -33,14 +35,37 @@ window.addEventListener('message', (event) => {
     return;
   }
 
+  if (command === 'chunk') {
+    const resolver = resolvers[id];
+    resolver.chunk?.(data);
+    return;
+  }
+
   const listeners = events[command];
   if (listeners) {
     listeners.forEach((listener) => listener({ id, command, data }));
   }
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function callCommand(command: string, data: unknown): Promise<any> {
+export function callCommand(command: string, data: unknown): Promise<any>;
+
+export function callCommand(
+  command: string,
+  data: unknown,
+  options: { stream: false },
+): Promise<any>;
+
+export function callCommand<T = any>(
+  command: string,
+  data: unknown,
+  options: { stream: true },
+): AsyncIterableIterator<T>;
+
+export function callCommand(
+  command: string,
+  data: unknown,
+  options?: { stream: boolean },
+): Promise<any> | AsyncIterableIterator<any> {
   const id = nanoid();
   vscode.postMessage({
     id,
@@ -48,9 +73,55 @@ export function callCommand(command: string, data: unknown): Promise<any> {
     data,
   });
 
-  return new Promise((resolve, reject) => {
-    resolvers[id] = { resolve, reject };
-  });
+  if (!options?.stream) {
+    return new Promise((resolve, reject) => {
+      resolvers[id] = { resolve, reject };
+    });
+  }
+
+  // notice handler
+  let chunkResolve: undefined | (() => void);
+  // use array to void data loss
+  const chunkData: any[] = [];
+
+  let stop = false;
+  const gen = (async function* () {
+    while (true) {
+      // wait for chunk
+      await new Promise<void>((resolve) => {
+        chunkResolve = resolve;
+      });
+      while (chunkData.length > 0) {
+        yield chunkData.shift();
+      }
+      if (stop) {
+        return;
+      }
+    }
+  })();
+
+  const chunk = (data: any) => {
+    chunkData.push(data);
+    if (chunkResolve) {
+      chunkResolve();
+      chunkResolve = undefined;
+    }
+  };
+
+  const resolve = (data: any) => {
+    chunkResolve?.();
+    stop = true;
+    gen.return(data);
+  };
+
+  // this cannot be catch by try catch in the outer for await loop.
+  const reject = (error: any) => {
+    gen.throw(error);
+  };
+
+  resolvers[id] = { resolve, reject, chunk };
+
+  return gen;
 }
 
 export function addCommandEventListener(

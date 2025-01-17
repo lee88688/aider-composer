@@ -8,6 +8,7 @@ It is highly recommended to read the [Requirements](#requirements) and [Extensio
 
 ## 🎉🎉News🎉🎉
 
+- Support [VSCode Remote](#vscode-remote)
 - [Architect Mode](#architect-mode), Note: the `editor` part will not show in the chat area. so you will see nothing after the `architect` part.
   ![architect-mode](./resources/architect-mode.gif)
 - [Multiple Models Support](#multiple-models)
@@ -127,6 +128,10 @@ You can enter generate code mode by pressing `ctrl+shift+l` in the editor. The c
 You can add multiple models and switch between them in the settings page. When you switch model or add new model, you need to **click save button** on top right to take effect.
 
 ![multiple-models](./resources/multiple-model.png)
+
+#### VSCode Remote
+
+This extension supports VSCode Remote, but you need to set `aider-composer.pythonPath` to the Python executable path in the remote server. And the most important thing is you need to install `Python` and the required packages `pip install aider-chat flask` in the <mark>remote server</mark>.
 
 ---
 

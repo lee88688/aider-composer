@@ -223,6 +223,8 @@
   },
   "dependencies": {
     "diff": "^7.0.0",
+    "eventsource-client": "^1.1.3",
+    "eventsource-parser": "^3.0.0",
     "fuse.js": "^7.0.0",
     "globby": "^14.0.2",
     "nanoid": "^5.0.9"
