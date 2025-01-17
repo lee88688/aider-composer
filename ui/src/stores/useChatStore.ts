@@ -190,6 +190,8 @@ export const useChatStore = create(
 
       currentChatRequest: undefined as SSE | undefined,
       currentEditFiles: [] as DiffViewChange[],
+      // architect editor is working
+      isEditorWorking: false,
     },
     (set, get) => ({
       async clearChat() {
@@ -352,6 +354,7 @@ export const useChatStore = create(
               history,
               current: undefined,
               currentChatRequest: undefined,
+              isEditorWorking: false,
             };
           });
         };
@@ -392,6 +395,22 @@ export const useChatStore = create(
                       usage: usage.usage,
                     }
                   : state.current,
+              }));
+              break;
+            }
+
+            case 'editor-start': {
+              set((state) => ({
+                ...state,
+                isEditorWorking: true,
+              }));
+              break;
+            }
+
+            case 'editor-end': {
+              set((state) => ({
+                ...state,
+                isEditorWorking: false,
               }));
               break;
             }

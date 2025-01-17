@@ -138,7 +138,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: {
 });
 
 export default function ChatMessageList() {
-  const { history, current } = useChatStore();
+  const { history, current, isEditorWorking } = useChatStore();
 
   const historyItems = useMemo(() => {
     return (
@@ -180,6 +180,17 @@ export default function ChatMessageList() {
       <div style={{ lineHeight: '1.6' }}>
         {historyItems}
         {currentItem}
+        {isEditorWorking && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <RefreshCw
+              size={16}
+              style={{
+                animation: 'spin 2s linear infinite',
+              }}
+            />
+            <span>Editor is working, please wait...</span>
+          </div>
+        )}
       </div>
       <div style={{ minHeight: '50vh' }}></div>
     </ScrollArea>
