@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/lee88688/aider-composer/compare/v1.8.0...v1.9.0) (2025-01-17)
+
+
+### Features
+
+* change python server sending framework and now support vscode remote ([#61](https://github.com/lee88688/aider-composer/issues/61)) ([7d33a4b](https://github.com/lee88688/aider-composer/commit/7d33a4b6f28ba5df55f4accddd9975d73ae3d69c))
+
 # [1.8.0](https://github.com/lee88688/aider-composer/compare/v1.7.0...v1.8.0) (2024-12-26)
 
 
