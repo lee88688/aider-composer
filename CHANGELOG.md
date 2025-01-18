@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/lee88688/aider-composer/compare/v1.9.0...v1.10.0) (2025-01-18)
+
+
+### Features
+
+* auto scroll down to bottom when chat ([164c05d](https://github.com/lee88688/aider-composer/commit/164c05d7d17fc6dc724ee9fb8dbe61389518ba34))
+
 # [1.9.0](https://github.com/lee88688/aider-composer/compare/v1.8.0...v1.9.0) (2025-01-17)
 
 
