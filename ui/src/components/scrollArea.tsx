@@ -1,4 +1,10 @@
-import { forwardRef, PropsWithChildren, HTMLAttributes } from 'react';
+import {
+  forwardRef,
+  PropsWithChildren,
+  HTMLAttributes,
+  useImperativeHandle,
+  useRef,
+} from 'react';
 import { css } from '@emotion/css';
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import clsx from 'clsx';
@@ -55,22 +61,39 @@ const scrollAreaThumbCss = css({
   },
 });
 
+export interface ScrollAreaRef {
+  scrollToBottom: () => void;
+}
+
 const ScrollArea = forwardRef<
-  HTMLDivElement,
+  ScrollAreaRef,
   PropsWithChildren<
     { disableX?: boolean } & Pick<
       HTMLAttributes<HTMLDivElement>,
       'style' | 'className'
     >
   >
->((props) => {
+>((props, ref) => {
   const { children, className, disableX, ...other } = props;
+
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    scrollToBottom: () => {
+      scrollAreaRef.current?.scrollTo({
+        top: scrollAreaRef.current?.scrollHeight,
+        behavior: 'smooth',
+      });
+    },
+  }));
+
   return (
     <ScrollAreaPrimitive.Root
       className={clsx(scrollAreaRootCss, className)}
       {...other}
     >
       <ScrollAreaPrimitive.Viewport
+        ref={scrollAreaRef}
         className={clsx(scrollAreaViewportCss, disableX && 'disable-x')}
       >
         {children}

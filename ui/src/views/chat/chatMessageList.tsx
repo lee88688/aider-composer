@@ -3,14 +3,14 @@ import { RefreshCw } from 'lucide-react';
 import Markdown, {
   type Components as MarkdownComponents,
 } from 'react-markdown';
-import ScrollArea from '../../components/scrollArea';
+import ScrollArea, { ScrollAreaRef } from '../../components/scrollArea';
 import {
   ChatAssistantMessage,
   ChatMessage,
   ChatUserMessage,
 } from '../../types';
 import { useChatStore } from '../../stores/useChatStore';
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 
 const messageItemStyle = css({
@@ -140,6 +140,8 @@ const ChatMessageItem = memo(function ChatMessageItem(props: {
 export default function ChatMessageList() {
   const { history, current, isEditorWorking } = useChatStore();
 
+  const scrollAreaRef = useRef<ScrollAreaRef>(null);
+
   const historyItems = useMemo(() => {
     return (
       <>
@@ -148,6 +150,13 @@ export default function ChatMessageList() {
         ))}
       </>
     );
+  }, [history]);
+
+  useEffect(() => {
+    const last = history[history.length - 1];
+    if (last && last.type === 'user') {
+      scrollAreaRef.current?.scrollToBottom();
+    }
   }, [history]);
 
   let currentItem: React.ReactNode;
@@ -176,7 +185,11 @@ export default function ChatMessageList() {
   }
 
   return (
-    <ScrollArea style={{ padding: '1rem', flexGrow: 1 }} disableX>
+    <ScrollArea
+      style={{ padding: '1rem', flexGrow: 1 }}
+      disableX
+      ref={scrollAreaRef}
+    >
       <div style={{ lineHeight: '1.6' }}>
         {historyItems}
         {currentItem}
