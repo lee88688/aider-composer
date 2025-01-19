@@ -44,6 +44,56 @@ This extension uses the Python packages `aider-chat` and `flask` to provide back
 - Install Python (download from [python.org](https://www.python.org/) or use other methods). For Mac or Python venv installations, please refer to [this issue](https://github.com/lee88688/aider-composer/issues/2)
 - Install the required packages using: `pip install aider-chat flask`
 
+### Install Required Packages With Virtual Environment
+
+It is recommended to install Python from [python.org](https://www.python.org/) in Windows. Other systems may be installed by the system package manager.
+
+When you install Python, it is recommended to create a virtual environment and install the packages in the virtual environment. You can use the following command to create a virtual environment:
+
+#### In Linux Or Mac
+```bash
+# create virtual environment, .venv is the name of the virtual environment, you can change it to any name you want
+python -m venv .venv
+# or in some systems, you may need to use python3
+python3 -m venv .venv
+
+# activate virtual environment
+source .venv/bin/activate
+```
+
+#### In Windows
+
+```powershell
+# create virtual environment, .venv is the name of the virtual environment, you can change it to any name you want
+python -m venv .venv
+# activate virtual environment
+.venv\Scripts\activate
+```
+
+Virtual environment is recommended because it can avoid conflicts with the system Python environment.
+
+### Install Packages
+
+After you **activate** the virtual environment, you need to install `aider-chat` and `flask` packages in the virtual environment. You can use the following command to install the packages:
+
+```bash
+pip install aider-chat flask
+```
+
+After you install the packages, you can set the `aider-composer.pythonPath` to the directory containing the Python executable in the VSCode settings.
+
+when in Linux or Mac, the path is in the virtual environment directory, like `path/to/.venv/bin`.
+
+when in Windows, the path is in the virtual environment directory, like `path/to/.venv/Scripts`.
+
+### Startup issue
+
+Since this extension needs extra things to run, how do I know the errors why it doesn't work? When the extension startup, it will execute a command to start the background service, you can see the output like below:
+
+> 2025-01-19 13:55:33.344 [info] aider-chat process args: /home/lee/aider/bin/python -m flask -A /home/lee/.vscode-server/extensions/lee2py.aider-composer-1.10.0/server/main.py run --port 13329
+
+The log above is the command used in VSCode SSH Remote. when it fails, you can see some error logs to diagnose the problem. But sometimes the error logs are not enough, you can use this command (`/home/lee/aider/bin/python -m flask -A /home/lee/.vscode-server/extensions/lee2py.aider-composer-1.10.0/server/main.py run --port 13329`) to execute and see the error logs in the terminal.
+
 ## Extension Settings
 
 This extension contributes the following setting:
