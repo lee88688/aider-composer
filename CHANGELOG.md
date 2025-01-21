@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/lee88688/aider-composer/compare/v1.10.0...v1.11.0) (2025-01-21)
+
+
+### Features
+
+* support deepseek reasoner ([168d1fa](https://github.com/lee88688/aider-composer/commit/168d1fa59a29e744aee72a74b9921098981629ce))
+
 # [1.10.0](https://github.com/lee88688/aider-composer/compare/v1.9.0...v1.10.0) (2025-01-18)
 
 
