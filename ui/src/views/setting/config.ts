@@ -16,7 +16,10 @@ export const settingMap: Record<string, SettingMapItem> = {
     hasBaseUrl: false,
   },
   deepseek: {
-    model: [{ label: 'DeepSeek Chat', value: 'deepseek/deepseek-chat' }],
+    model: [
+      { label: 'DeepSeek Chat', value: 'deepseek/deepseek-chat' },
+      { label: 'DeepSeek Reasoner', value: 'deepseek/deepseek-reasoner' },
+    ],
     hasBaseUrl: false,
   },
   ollama: {
