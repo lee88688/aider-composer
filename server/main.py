@@ -1,9 +1,10 @@
-from typing import Dict, Iterator, List, Optional, Literal, Any
+from typing import Callable, Dict, Iterator, List, Optional, Literal, Any, cast
 from flask import Flask, jsonify, request, Response
 from aider.models import Model
 from aider.coders import Coder, ArchitectCoder
 from aider.io import InputOutput
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
+import re
 import os
 import json
 from threading import Event, Thread
@@ -31,8 +32,8 @@ def emit_data_update(self, data):
     if self.on_data_update:
         self.on_data_update(data)
 
-Coder.on_data_update = on_data_update
-Coder.emit_data_update = emit_data_update
+Coder.on_data_update = on_data_update # type: ignore
+Coder.emit_data_update = emit_data_update # type: ignore
 
 # patch ArchitectCoder
 original_reply_completed = ArchitectCoder.reply_completed
@@ -73,11 +74,39 @@ provider_env_map = {
     'gemini': 'GEMINI_API_KEY',
 }
 
+# copy from aider/main.py to void import main.py
+def parse_lint_cmds(lint_cmds, io):
+    err = False
+    res = dict()
+    for lint_cmd in lint_cmds:
+        if re.match(r"^[a-z]+:.*", lint_cmd):
+            pieces = lint_cmd.split(":")
+            lang = pieces[0]
+            cmd = lint_cmd[len(lang) + 1 :]
+            lang = lang.strip()
+        else:
+            lang = None
+            cmd = lint_cmd
+
+        cmd = cmd.strip()
+
+        if cmd:
+            res[lang] = cmd
+        else:
+            io.tool_error(f'Unable to parse --lint-cmd "{lint_cmd}"')
+            io.tool_output('The arg should be "language: cmd --args ..."')
+            io.tool_output('For example: --lint-cmd "python: flake8 --select=E9"')
+            err = True
+    if err:
+        return
+    return res
+
 
 class CaptureIO(InputOutput):
     lines: List[str]
     error_lines: List[str]
     write_files: Dict[str, str]
+    _confirm_ask: Callable[[str], bool] = lambda _: False
 
     def __init__(self, *args, **kwargs):
         self.lines = []
@@ -87,18 +116,18 @@ class CaptureIO(InputOutput):
         self.write_files = {}
         super().__init__(*args, **kwargs)
 
-    def tool_output(self, msg="", log_only=False, bold=False):
+    def tool_output(self, *messages, log_only=False, bold=False):
         if not log_only:
-            self.lines.append(msg)
-        super().tool_output(msg, log_only=log_only, bold=bold)
+            self.lines.append(*messages)
+        super().tool_output(*messages, log_only=log_only, bold=bold)
 
-    def tool_error(self, msg):
-        self.error_lines.append(msg)
-        super().tool_error(msg)
+    def tool_error(self, message="", strip=True):
+        self.error_lines.append(message)
+        super().tool_error(message, strip)
 
-    def tool_warning(self, msg):
-        self.lines.append(msg)
-        super().tool_warning(msg)
+    def tool_warning(self, message="", strip=True):
+        self.lines.append(message)
+        super().tool_warning(message, strip=strip)
 
     def get_captured_lines(self):
         lines = self.lines
@@ -110,20 +139,23 @@ class CaptureIO(InputOutput):
         self.error_lines = []
         return lines
 
-    def write_text(self, filename, content):
+    def write_text(self, filename, content, max_retries=3, initial_delay=0.1):
         print(f'write {filename}')
         self.write_files[filename] = content
     
-    def read_text(self, filename):
+    def read_text(self, filename, silent=False):
         print(f'read {filename}')
         if filename in self.write_files:
             return self.write_files[filename]
-        return super().read_text(filename)
+        return super().read_text(filename, silent)
 
     def get_captured_write_files(self):
         write_files = self.write_files
         self.write_files = {}
         return write_files
+    
+    def on_confirm_ask(self, fn):
+        self._confirm_ask = fn
     
     def confirm_ask(
         self,
@@ -135,11 +167,21 @@ class CaptureIO(InputOutput):
         allow_never=False,
     ):
         print('confirm_ask', question, subject, group)
+        question_type = ''
         # create new file
         if 'Create new file' in question:
             return True
         elif 'Edit the files' in question:
             return True
+        elif 'Attempt to fix lint errors' in question:
+            question_type = 'lint-fix'
+        elif 'Attempt to fix test errors' in question:
+            question_type = 'test-fix'
+        
+        if question_type:
+            res = self._confirm_ask(question)
+            return res
+
         return False
 
 @dataclass
@@ -148,18 +190,27 @@ class ChatSessionReference:
     fs_path: str
 
 @dataclass
+class ChatSessionExtraConfig:
+    lint_cmds: Optional[List[str]] = None
+    auto_lint: bool = False
+    auto_test: bool = False
+    test_cmd: Optional[str] = None
+
+ChatModeType = Literal['ask', 'code', 'architect']
+
+@dataclass
 class ChatSessionData:
-    chat_type: str
+    chat_type: ChatModeType
     diff_format: str
     message: str
     reference_list: List[ChatSessionReference]
-
-ChatModeType = Literal['ask', 'code', 'architect']
+    extra_config: ChatSessionExtraConfig
 
 class ChatSessionManager:
     chat_type: ChatModeType
     diff_format: str
     reference_list: List[ChatSessionReference]
+    extra_config: ChatSessionExtraConfig
     setting: Optional[ChatSetting] = None
     confirm_ask_result: Optional[Any] = None
 
@@ -175,6 +226,7 @@ class ChatSessionManager:
             fancy_input=False,
         )
         self.io = io
+        self.io.on_confirm_ask(lambda question: self._confirm_ask(question))
 
         coder = Coder.create(
             main_model=model,
@@ -191,12 +243,18 @@ class ChatSessionManager:
         self.chat_type = 'ask'
         self.diff_format = 'diff'
         self.reference_list = []
+        self.extra_config = ChatSessionExtraConfig()
 
         self.confirm_ask_event = Event()
         self.queue = Queue()
     
     def _update_patch_coder(self):
-        self.coder.on_data_update(lambda data: self.queue.put(data))
+        self.coder.on_data_update(lambda data: self.queue.put(data)) # type: ignore
+
+    def _confirm_ask(self, question: str):
+        self.queue.put(ChatChunkData(event='confirm-ask', data={"type": question}))
+        self.confirm_ask_event.wait()
+        return bool(self.confirm_ask_result)
 
     def update_model(self, setting: ChatSetting):
         if self.setting != setting:
@@ -226,9 +284,15 @@ class ChatSessionManager:
     def update_coder(self):
         self.coder = Coder.create(
             from_coder=self.coder,
+            summarize_from_coder=False,
             edit_format=self.diff_format if self.chat_type == 'code' else self.chat_type,
             fnames=(item.fs_path for item in self.reference_list if not item.readonly),
             read_only_fnames=(item.fs_path for item in self.reference_list if item.readonly),
+            # extra config
+            lint_cmds=parse_lint_cmds(self.extra_config.lint_cmds, self.io),
+            auto_lint=self.extra_config.auto_lint,
+            auto_test=self.extra_config.auto_test,
+            test_cmd=self.extra_config.test_cmd,
         )
         if self.chat_type == 'architect':
             self.coder.main_model.editor_edit_format = self.diff_format
@@ -246,6 +310,9 @@ class ChatSessionManager:
         if data.reference_list != self.reference_list:
             need_update_coder = True
             self.reference_list = data.reference_list
+        if data.extra_config != self.extra_config:
+            need_update_coder = True
+            self.extra_config = data.extra_config
 
         if need_update_coder:
             self.update_coder()
@@ -288,7 +355,7 @@ class ChatSessionManager:
 
                 self.queue.put(ChatChunkData(event='reflected', data={"message": message}))
 
-                error_lines = self.coder.io.get_captured_error_lines()
+                error_lines = self.coder.io.get_captured_error_lines() # type: ignore
                 if error_lines:
                     if not message:
                         raise Exception('\n'.join(error_lines))
@@ -314,11 +381,8 @@ class ChatSessionManager:
             self.queue.put(ChatChunkData(event='end'))
 
     
-    def confirm_ask(self):
-        self.confirm_ask_event.clear()
-        self.confirm_ask_event.wait()
-
-    def confirm_ask_reply(self):
+    def confirm_ask_reply(self, data: Any):
+        self.confirm_ask_result = data
         self.confirm_ask_event.set()
 
 class CORS:
@@ -346,8 +410,9 @@ def sse():
         response = Response()
         return response
 
-    data = request.json
+    data: dict = cast(dict, request.json)
     data['reference_list'] = [ChatSessionReference(**item) for item in data['reference_list']]
+    data['extra_config'] = ChatSessionExtraConfig(**data['extra_config'])
 
     chat_session_data = ChatSessionData(**data)
 
@@ -378,7 +443,7 @@ def set_history():
 
 @app.route('/api/chat/setting', methods=['POST'])
 def update_setting():
-    data = request.json
+    data: dict = cast(dict, request.json)
     # Create ModelSetting instances for both main and editor models
     data['main_model'] = ModelSetting(**data['main_model'])
     if 'editor_model' in data and data['editor_model']:
@@ -388,16 +453,10 @@ def update_setting():
     manager.update_model(setting)
     return jsonify({})
 
-@app.route('/api/chat/confirm/ask', methods=['POST'])
-def confirm_ask():
-    manager.confirm_ask()
-    return jsonify(manager.confirm_ask_result)
-
 @app.route('/api/chat/confirm/reply', methods=['POST'])
 def confirm_reply():
-    data = request.json
-    manager.confirm_ask_result = data
-    manager.confirm_ask_reply()
+    data: dict = cast(dict, request.json)
+    manager.confirm_ask_reply(data['data'])
     return jsonify({})
 
 if __name__ == '__main__':

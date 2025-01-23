@@ -227,7 +227,8 @@
     "eventsource-parser": "^3.0.0",
     "fuse.js": "^7.0.0",
     "globby": "^14.0.2",
-    "nanoid": "^5.0.9"
+    "nanoid": "^5.0.9",
+    "yaml": "^2.7.0"
   },
   "release": {
     "branches": [
