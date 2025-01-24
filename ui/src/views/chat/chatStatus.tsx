@@ -70,6 +70,8 @@ export function ChatStatus() {
     ),
   );
 
+  const currentConfirmAsk = useChatStore((state) => state.currentConfirmAsk);
+
   const currentEditFiles = useChatStore((state) => state.currentEditFiles);
 
   const cancelGenerateCode = useChatStore((state) => state.cancelGenerateCode);
@@ -86,6 +88,16 @@ export function ChatStatus() {
   const rejectCode = async () => {
     await rejectGenerateCode();
     cancelGenerateCode();
+    return clearChat();
+  };
+
+  const acceptConfirmAsk = async () => {
+    await acceptConfirmAsk();
+    return clearChat();
+  };
+
+  const rejectConfirmAsk = async () => {
+    await rejectConfirmAsk();
     return clearChat();
   };
 
@@ -157,6 +169,30 @@ export function ChatStatus() {
     );
   }
 
+  let confirmAsk: ReactNode;
+  if (currentConfirmAsk) {
+    confirmAsk = (
+      <div className={statusLine}>
+        <span>Confirm Ask: {currentConfirmAsk}</span>
+        <div className="empty"></div>
+        <VSCodeButton
+          appearance="icon"
+          title="Accept"
+          onClick={acceptConfirmAsk}
+        >
+          <Check size={16} />
+        </VSCodeButton>
+        <VSCodeButton
+          appearance="icon"
+          title="Reject"
+          onClick={rejectConfirmAsk}
+        >
+          <X size={16} />
+        </VSCodeButton>
+      </div>
+    );
+  }
+
   return (
     <div>
       {currentEditFiles.length > 0 && (
@@ -200,6 +236,7 @@ export function ChatStatus() {
           <VSCodeDivider />
         </>
       )}
+      {confirmAsk}
       {status}
     </div>
   );
