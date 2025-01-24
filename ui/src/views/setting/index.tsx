@@ -4,6 +4,7 @@ import {
   VSCodeOption,
   VSCodeTextField,
   VSCodeDivider,
+  VSCodeCheckbox,
 } from '@vscode/webview-ui-toolkit/react';
 import { Trash2, Split } from 'lucide-react';
 import styled from '@emotion/styled';
@@ -57,6 +58,7 @@ const initialValues = {
   model: '',
   apiKey: '',
   baseUrl: '',
+  autoCommit: false,
 };
 
 const SettingForm = forwardRef<
@@ -141,6 +143,20 @@ const SettingForm = forwardRef<
           </VSCodeOption>
           <VSCodeOption value="gemini">Gemini</VSCodeOption>
         </VSCodeDropdown>
+      </FormItemContainer>
+
+      <FormItemContainer>
+        <label>Auto Commit Mode</label>
+        <VSCodeCheckbox
+          checked={formik.values.autoCommit}
+          onChange={(e) => {
+            formik.setFieldTouched('autoCommit');
+            formik.setFieldValue(
+              'autoCommit',
+              (e.target as HTMLInputElement).checked,
+            );
+          }}
+        />
       </FormItemContainer>
 
       <FormItemContainer>

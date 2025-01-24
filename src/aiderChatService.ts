@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import { isProductionMode } from './utils/isProductionMode';
 import { EventSourceParserStream } from 'eventsource-parser/stream';
 import { createEventSource } from 'eventsource-client';
+import ConfigFileManager from './file/configFileManager';
 
 export default class AiderChatService {
   private aiderChatProcess: ChildProcess | undefined;
@@ -19,6 +20,7 @@ export default class AiderChatService {
   constructor(
     private context: vscode.ExtensionContext,
     private outputChannel: vscode.LogOutputChannel,
+    private configFileManager: ConfigFileManager,
   ) {
     this.isDev = !isProductionMode(context);
   }
@@ -239,15 +241,38 @@ export default class AiderChatService {
   }
 
   async apiChat(
-    payload: unknown,
+    payload: any,
     chunkCallback: (data: { name?: string; data: unknown }) => void,
   ) {
+    const config = this.configFileManager.config;
+
+    const { auto_commit, ...rest } = payload;
     const res = await fetch(`${this.serviceUrl}/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(
+        auto_commit
+          ? {
+              ...rest,
+              ...(config.lint
+                ? {
+                    lint_cmds: Array.isArray(config.lintCmd)
+                      ? config.lintCmd
+                      : [config.lintCmd],
+                    auto_lint: config.autoLint,
+                  }
+                : {}),
+              ...(config.test
+                ? {
+                    test_cmd: config.testCmd,
+                    auto_test: config.autoTest,
+                  }
+                : {}),
+            }
+          : rest,
+      ),
     });
 
     const stream = res.body

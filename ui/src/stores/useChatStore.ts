@@ -24,6 +24,7 @@ import {
   writeFile,
 } from '../commandApi';
 import { persistStorage } from './lib';
+import useSettingStore from './useSettingStore';
 
 // sse api 返回的类型
 type ChatChunkMessage = {
@@ -35,6 +36,7 @@ type ServerChatPayload = {
   diff_format: string;
   message: string;
   reference_list: { fs_path: string; readonly: boolean }[];
+  auto_commit: boolean;
 };
 
 type ChatReferenceItemWithReadOnly = ChatReferenceItem & { readonly?: boolean };
@@ -192,6 +194,8 @@ export const useChatStore = create(
       currentEditFiles: [] as DiffViewChange[],
       // architect editor is working
       isEditorWorking: false,
+      // current confirm ask
+      currentConfirmAsk: '',
     },
     (set, get) => ({
       async clearChat() {
@@ -359,11 +363,14 @@ export const useChatStore = create(
           });
         };
 
+        const { autoCommit } = useSettingStore.getState();
+
         const payload = {
           chat_type: chatType,
           diff_format: diffFormat,
           message: message,
           reference_list: referenceList,
+          auto_commit: autoCommit,
         } satisfies ServerChatPayload;
 
         const stream = apiChat(payload);
@@ -420,8 +427,19 @@ export const useChatStore = create(
                 write: Record<string, string>;
               };
               for (const [path, content] of Object.entries(writeParams.write)) {
-                writeFile({ path, content });
+                writeFile({ path, content, autoCommit });
               }
+              break;
+            }
+
+            case 'confirm-ask': {
+              const confirmAskMessage = chunk.data as {
+                type: string;
+              };
+              set((state) => ({
+                ...state,
+                currentConfirmAsk: confirmAskMessage.type,
+              }));
               break;
             }
 

@@ -49,6 +49,8 @@ const useSettingStore = create(
         current: '',
         editorModel: '',
         models: [] as ChatModelSetting[],
+        // auto commit when edit file, this will not review code changes.
+        autoCommit: false,
       },
       (set, get) => ({
         async setSetting(

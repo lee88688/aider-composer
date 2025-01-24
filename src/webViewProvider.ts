@@ -473,9 +473,22 @@ class VscodeReactView implements WebviewViewProvider {
       });
   }
 
-  private async writeFile(data: { path: string; content: string }) {
-    this.outputChannel.info(`command write file: ${data.path}`);
-    return this.diffViewManager.openDiffView(data);
+  private async writeFile(data: {
+    path: string;
+    content: string;
+    autoCommit: boolean;
+  }) {
+    this.outputChannel.info(
+      `command write file: ${data.path}, autoCommit: ${data.autoCommit}`,
+    );
+    if (data.autoCommit) {
+      await vscode.workspace.fs.writeFile(
+        vscode.Uri.file(data.path),
+        Buffer.from(data.content),
+      );
+      return;
+    }
+    this.diffViewManager.openDiffView(data);
   }
 
   private getFileBasePath(fileUri: vscode.Uri) {
