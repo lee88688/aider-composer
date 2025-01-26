@@ -399,8 +399,8 @@ class ChatSessionManager:
             self.queue.put(ChatChunkData(event='end'))
 
     
-    def confirm_ask_reply(self, data: Any):
-        self.confirm_ask_result = data
+    def confirm_ask_reply(self, data: dict):
+        self.confirm_ask_result = data['response']
         self.confirm_ask_event.set()
 
 class CORS:
@@ -474,7 +474,7 @@ def update_setting():
 @app.route('/api/chat/confirm/reply', methods=['POST'])
 def confirm_reply():
     data: dict = cast(dict, request.json)
-    manager.confirm_ask_reply(data['data'])
+    manager.confirm_ask_reply(data)
     return jsonify({})
 
 if __name__ == '__main__':

@@ -39,6 +39,14 @@ export function apiChatSetting(payload: unknown) {
   return callCommand('api-chat-setting', payload);
 }
 
+export function apiConfirmAsk(payload: {
+  type: string;
+  response: boolean;
+  data?: unknown;
+}) {
+  return callCommand('api-confirm-ask', payload);
+}
+
 // accept/reject file
 
 /**

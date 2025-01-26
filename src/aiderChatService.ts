@@ -341,4 +341,18 @@ export default class AiderChatService {
       body: JSON.stringify(payload),
     });
   }
+
+  async apiConfirmAsk(payload: {
+    type: string;
+    response: boolean;
+    data?: unknown;
+  }) {
+    await fetch(`${this.serviceUrl}/api/chat/confirm/reply`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+  }
 }

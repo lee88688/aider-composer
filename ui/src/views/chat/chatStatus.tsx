@@ -6,6 +6,7 @@ import { css } from '@emotion/css';
 import {
   acceptFile,
   acceptGenerateCode,
+  apiConfirmAsk,
   rejectFile,
   rejectGenerateCode,
 } from '../../commandApi';
@@ -92,13 +93,17 @@ export function ChatStatus() {
   };
 
   const acceptConfirmAsk = async () => {
-    await acceptConfirmAsk();
-    return clearChat();
+    return apiConfirmAsk({
+      type: currentConfirmAsk,
+      response: true,
+    });
   };
 
   const rejectConfirmAsk = async () => {
-    await rejectConfirmAsk();
-    return clearChat();
+    return apiConfirmAsk({
+      type: currentConfirmAsk,
+      response: false,
+    });
   };
 
   const handleRegenerateCode = async () => {
