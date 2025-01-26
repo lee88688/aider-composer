@@ -14,7 +14,7 @@ export function searchFile(query: string, limit: number = 20) {
 export function writeFile(params: {
   path: string;
   content: string;
-  autoCommit: boolean;
+  autoCommit?: boolean;
 }) {
   return callCommand('write-file', params);
 }

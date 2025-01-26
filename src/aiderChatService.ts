@@ -246,33 +246,28 @@ export default class AiderChatService {
   ) {
     const config = this.configFileManager.config;
 
-    const { auto_commit, ...rest } = payload;
     const res = await fetch(`${this.serviceUrl}/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(
-        auto_commit
+      body: JSON.stringify({
+        ...payload,
+        ...(config.lint
           ? {
-              ...rest,
-              ...(config.lint
-                ? {
-                    lint_cmds: Array.isArray(config.lintCmd)
-                      ? config.lintCmd
-                      : [config.lintCmd],
-                    auto_lint: config.autoLint,
-                  }
-                : {}),
-              ...(config.test
-                ? {
-                    test_cmd: config.testCmd,
-                    auto_test: config.autoTest,
-                  }
-                : {}),
+              lint_cmds: Array.isArray(config.lintCmd)
+                ? config.lintCmd
+                : [config.lintCmd],
+              auto_lint: config.autoLint,
             }
-          : rest,
-      ),
+          : {}),
+        ...(config.test
+          ? {
+              test_cmd: config.testCmd,
+              auto_test: config.autoTest,
+            }
+          : {}),
+      }),
     });
 
     const stream = res.body

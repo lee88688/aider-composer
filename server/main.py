@@ -32,8 +32,21 @@ def emit_data_update(self, data):
     if self.on_data_update:
         self.on_data_update(data)
 
+def on_confirm_ask(self, fn):
+    self._confirm_ask = fn
+
 Coder.on_data_update = on_data_update # type: ignore
 Coder.emit_data_update = emit_data_update # type: ignore
+Coder.on_confirm_ask = on_confirm_ask # type: ignore
+
+def auto_commit(self, edited, context=None):
+    print('auto_commit', edited)
+    # when auto_commits is True, don't block to confirm
+    if self.auto_commits:
+        return
+    self._on_confirm_ask('auto-commit', list(edited))
+
+Coder.auto_commit = auto_commit
 
 # patch ArchitectCoder
 original_reply_completed = ArchitectCoder.reply_completed
@@ -58,6 +71,7 @@ class ModelSetting:
 class ChatSetting:
     main_model: ModelSetting
     editor_model: Optional[ModelSetting] = None
+    auto_commits: bool = False
 
 provider_env_map = {
     'deepseek': 'DEEPSEEK_API_KEY',
@@ -226,18 +240,15 @@ class ChatSessionManager:
             fancy_input=False,
         )
         self.io = io
-        self.io.on_confirm_ask(lambda question: self._confirm_ask(question))
+        self.io.on_confirm_ask(self._confirm_ask)
 
-        coder = Coder.create(
+        self.coder = Coder.create(
             main_model=model,
             io=io,
             edit_format='ask',
             use_git=False,
+            auto_commits=False,
         )
-        coder.yield_stream = True
-        coder.stream = True
-        coder.pretty = False
-        self.coder = coder
         self._update_patch_coder()
 
         self.chat_type = 'ask'
@@ -249,10 +260,16 @@ class ChatSessionManager:
         self.queue = Queue()
     
     def _update_patch_coder(self):
-        self.coder.on_data_update(lambda data: self.queue.put(data)) # type: ignore
+        self.coder.yield_stream = True
+        self.coder.stream = True
+        self.coder.pretty = False
+        # when auto_commits is True, it will set dirty_commits to True
+        self.coder.dirty_commits = False
+        self.coder.on_data_update(self.queue.put) # type: ignore
+        self.coder.on_confirm_ask(self._confirm_ask) # type: ignore
 
-    def _confirm_ask(self, question: str):
-        self.queue.put(ChatChunkData(event='confirm-ask', data={"type": question}))
+    def _confirm_ask(self, question: str, data: Any = None):
+        self.queue.put(ChatChunkData(event='confirm-ask', data={"type": question, "data": data}))
         self.confirm_ask_event.wait()
         return bool(self.confirm_ask_result)
 
@@ -269,7 +286,7 @@ class ChatSessionManager:
                 model.editor_model = Model(setting.editor_model.model)
                 self._configure_model_env(setting.editor_model)
             
-            self.coder = Coder.create(from_coder=self.coder, main_model=model)
+            self.coder = Coder.create(from_coder=self.coder, main_model=model, auto_commits=setting.auto_commits)
     
     def _configure_model_env(self, setting: ModelSetting):
         # update os env
@@ -367,6 +384,7 @@ class ChatSessionManager:
             if write_files:
                 data = {
                     "write": write_files,
+                    "auto_commits": self.coder.auto_commits,
                 }
                 self.queue.put(ChatChunkData(event='write', data=data))
 

@@ -58,7 +58,6 @@ const initialValues = {
   model: '',
   apiKey: '',
   baseUrl: '',
-  autoCommit: false,
 };
 
 const SettingForm = forwardRef<
@@ -143,20 +142,6 @@ const SettingForm = forwardRef<
           </VSCodeOption>
           <VSCodeOption value="gemini">Gemini</VSCodeOption>
         </VSCodeDropdown>
-      </FormItemContainer>
-
-      <FormItemContainer>
-        <label>Auto Commit Mode</label>
-        <VSCodeCheckbox
-          checked={formik.values.autoCommit}
-          onChange={(e) => {
-            formik.setFieldTouched('autoCommit');
-            formik.setFieldValue(
-              'autoCommit',
-              (e.target as HTMLInputElement).checked,
-            );
-          }}
-        />
       </FormItemContainer>
 
       <FormItemContainer>
@@ -251,6 +236,7 @@ export default function Setting() {
   const models = useSettingStore((state) => state.models);
   const current = useSettingStore((state) => state.current);
   const editorModel = useSettingStore((state) => state.editorModel);
+  const autoCommit = useSettingStore((state) => state.autoCommit);
 
   const setSetting = useSettingStore((state) => state.setSetting);
   const setViewType = useExtensionStore((state) => state.setViewType);
@@ -258,6 +244,9 @@ export default function Setting() {
   const [currentSetting, setCurrentSetting] = useState(current);
   const [currentEditorModel, setCurrentEditorModel] = useState(editorModel);
   const [currentModels, setCurrentModels] = useState(models);
+  const [currentAutoCommit, setCurrentAutoCommit] = useState(
+    autoCommit ?? false,
+  );
 
   const ref = useRef<SettingFormRef>(null);
 
@@ -287,7 +276,12 @@ export default function Setting() {
         </h1>
         <VSCodeButton
           onClick={async () => {
-            await setSetting(currentSetting, currentEditorModel, currentModels);
+            await setSetting(
+              currentSetting,
+              currentEditorModel,
+              currentModels,
+              currentAutoCommit,
+            );
             setViewType('chat');
           }}
         >
@@ -330,6 +324,16 @@ export default function Setting() {
         <ErrorMessage>
           {!currentEditorModel && 'Please select a editor model'}
         </ErrorMessage>
+      </FormItemContainer>
+
+      <FormItemContainer>
+        <label>Auto Commit Mode</label>
+        <VSCodeCheckbox
+          checked={currentAutoCommit}
+          onChange={(e) => {
+            setCurrentAutoCommit((e.target as HTMLInputElement).checked);
+          }}
+        />
       </FormItemContainer>
 
       <VSCodeDivider />

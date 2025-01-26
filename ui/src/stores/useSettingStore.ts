@@ -15,6 +15,7 @@ export type ChatModelSetting = {
 export async function apiSetting(
   setting: ChatModelSetting,
   editorModel: ChatModelSetting,
+  autoCommit: boolean,
 ) {
   const convertToApiModel = (s: ChatModelSetting) => {
     const m = settingMap[s.provider].model;
@@ -34,6 +35,7 @@ export async function apiSetting(
   return apiChatSetting({
     main_model: convertToApiModel(setting),
     editor_model: editorModel ? convertToApiModel(editorModel) : null,
+    auto_commits: autoCommit,
   });
 }
 
@@ -54,26 +56,28 @@ const useSettingStore = create(
       },
       (set, get) => ({
         async setSetting(
-          name: string,
+          current: string,
           editorModel: string,
           models: ChatModelSetting[],
+          autoCommit: boolean,
         ) {
-          const setting = models.find((item) => item.name === name);
+          const setting = models.find((item) => item.name === current);
           const editorSetting = models.find(
             (item) => item.name === editorModel,
           );
-          if (!setting || !name || !editorSetting) {
+          if (!setting || !current || !editorSetting) {
             throw new Error('Setting not found');
           }
 
           set((state) => ({
             ...state,
-            current: name,
+            current: current,
             editorModel,
             models,
+            autoCommit,
           }));
 
-          await apiSetting(setting, editorSetting);
+          await apiSetting(setting, editorSetting, autoCommit);
         },
         addSetting(setting: ChatModelSetting) {
           set((state) => ({

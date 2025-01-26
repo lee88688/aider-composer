@@ -24,11 +24,13 @@ async function main() {
 
   const setting = useSettingStore.getState().getCurrentSetting();
   const editorSetting = useSettingStore.getState().getCurrentEditorSetting();
+  const autoCommit = useSettingStore.getState().autoCommit;
+
   if (!setting || !editorSetting) {
     showErrorMessage('Model setting first.');
     useExtensionStore.setState({ viewType: 'setting' });
   } else {
-    await apiSetting(setting, editorSetting);
+    await apiSetting(setting, editorSetting, autoCommit);
     useExtensionStore.setState({ viewType: 'chat' });
   }
 }

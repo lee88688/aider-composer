@@ -24,7 +24,6 @@ import {
   writeFile,
 } from '../commandApi';
 import { persistStorage } from './lib';
-import useSettingStore from './useSettingStore';
 
 // sse api 返回的类型
 type ChatChunkMessage = {
@@ -36,7 +35,6 @@ type ServerChatPayload = {
   diff_format: string;
   message: string;
   reference_list: { fs_path: string; readonly: boolean }[];
-  auto_commit: boolean;
 };
 
 type ChatReferenceItemWithReadOnly = ChatReferenceItem & { readonly?: boolean };
@@ -363,14 +361,11 @@ export const useChatStore = create(
           });
         };
 
-        const { autoCommit } = useSettingStore.getState();
-
         const payload = {
           chat_type: chatType,
           diff_format: diffFormat,
           message: message,
           reference_list: referenceList,
-          auto_commit: autoCommit,
         } satisfies ServerChatPayload;
 
         const stream = apiChat(payload);
@@ -425,9 +420,14 @@ export const useChatStore = create(
             case 'write': {
               const writeParams = chunk.data as {
                 write: Record<string, string>;
+                auto_commits: boolean;
               };
               for (const [path, content] of Object.entries(writeParams.write)) {
-                writeFile({ path, content, autoCommit });
+                writeFile({
+                  path,
+                  content,
+                  autoCommit: writeParams.auto_commits,
+                });
               }
               break;
             }
