@@ -17,8 +17,10 @@ export function ListItem(
       title={props.title}
       onClick={props.onClick}
     >
-      <div style={{ flexGrow: 1 }}>{props.children}</div>
-      <div className="secondary-text">{props.secondaryText}</div>
+      <div style={{ flexGrow: 1, maxWidth: '100%' }}>{props.children}</div>
+      {props.secondaryText && (
+        <div className="secondary-text">{props.secondaryText}</div>
+      )}
     </li>
   );
 }

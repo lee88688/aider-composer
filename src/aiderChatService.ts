@@ -12,6 +12,8 @@ export default class AiderChatService {
   private aiderChatProcess: ChildProcess | undefined;
   private isDev = false;
 
+  private configFileManager: ConfigFileManager;
+
   port: number = 0;
 
   onStarted: () => void = () => {};
@@ -20,9 +22,14 @@ export default class AiderChatService {
   constructor(
     private context: vscode.ExtensionContext,
     private outputChannel: vscode.LogOutputChannel,
-    private configFileManager: ConfigFileManager,
   ) {
     this.isDev = !isProductionMode(context);
+
+    const cwd = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!cwd) {
+      throw new Error('No workspace folder found');
+    }
+    this.configFileManager = new ConfigFileManager(cwd);
   }
 
   private async pythonFilePathFinder(pythonPath: string) {
@@ -246,6 +253,22 @@ export default class AiderChatService {
   ) {
     const config = this.configFileManager.config;
 
+    const extra_config = {
+      ...(config.lint
+        ? {
+            lint_cmds: Array.isArray(config.lintCmd)
+              ? config.lintCmd
+              : [config.lintCmd],
+            auto_lint: config.autoLint,
+          }
+        : {}),
+      ...(config.test
+        ? {
+            test_cmd: config.testCmd,
+            auto_test: config.autoTest,
+          }
+        : {}),
+    };
     const res = await fetch(`${this.serviceUrl}/api/chat`, {
       method: 'POST',
       headers: {
@@ -253,20 +276,7 @@ export default class AiderChatService {
       },
       body: JSON.stringify({
         ...payload,
-        ...(config.lint
-          ? {
-              lint_cmds: Array.isArray(config.lintCmd)
-                ? config.lintCmd
-                : [config.lintCmd],
-              auto_lint: config.autoLint,
-            }
-          : {}),
-        ...(config.test
-          ? {
-              test_cmd: config.testCmd,
-              auto_test: config.autoTest,
-            }
-          : {}),
+        extra_config,
       }),
     });
 

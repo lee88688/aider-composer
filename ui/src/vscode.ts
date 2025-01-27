@@ -66,6 +66,7 @@ export function callCommand(
   data: unknown,
   options?: { stream: boolean },
 ): Promise<any> | AsyncIterableIterator<any> {
+  console.debug('callCommand', command, data);
   const id = nanoid();
   vscode.postMessage({
     id,
@@ -199,21 +200,5 @@ addCommandEventListener('insert-into-chat', ({ data }) => {
 addCommandEventListener('diff-view-change', (params) => {
   const data = params.data as DiffViewChange;
   console.debug('diff-view-change', data);
-  useChatStore.setState((state) => {
-    const isExist = state.currentEditFiles.some(
-      (file) => file.path === data.path,
-    );
-    if (isExist) {
-      return {
-        ...state,
-        currentEditFiles: state.currentEditFiles.map((item) =>
-          item.path === data.path ? data : item,
-        ),
-      };
-    }
-    return {
-      ...state,
-      currentEditFiles: [...state.currentEditFiles, data],
-    };
-  });
+  useChatStore.getState().handleDiffViewChange(data);
 });

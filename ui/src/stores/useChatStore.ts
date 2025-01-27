@@ -17,6 +17,7 @@ import { nanoid } from 'nanoid';
 import {
   apiChat,
   apiClearChat,
+  apiConfirmAsk,
   apiSaveSession,
   cancelGenerateCode,
   logToOutput,
@@ -196,6 +197,37 @@ export const useChatStore = create(
       currentConfirmAsk: '',
     },
     (set, get) => ({
+      handleDiffViewChange(data: DiffViewChange) {
+        const state = get();
+        let currentEditFiles = state.currentEditFiles;
+        const preCurrentEditFiles = currentEditFiles;
+
+        const isExist = state.currentEditFiles.some(
+          (file) => file.path === data.path,
+        );
+        if (isExist) {
+          return {
+            ...state,
+            currentEditFiles: state.currentEditFiles.map((item) =>
+              item.path === data.path ? data : item,
+            ),
+          };
+        } else {
+          currentEditFiles = [...currentEditFiles, data];
+        }
+
+        set({ currentEditFiles });
+
+        // when in auto-commit mode, all files are committed and we should clear the confirm ask
+        if (
+          state.currentConfirmAsk === 'auto-commit' &&
+          currentEditFiles.length === 0 &&
+          preCurrentEditFiles.length > 0
+        ) {
+          apiConfirmAsk({ type: 'auto-commit', response: true });
+          set({ currentConfirmAsk: '' });
+        }
+      },
       async clearChat() {
         await apiClearChat();
         set({

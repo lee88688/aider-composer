@@ -341,9 +341,22 @@ export default function Setting() {
         {currentModels.map((item) => {
           return (
             <ListItem>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <div>{item.name}</div>
-                <div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    flexGrow: 1,
+                    flexShrink: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >{`${item.name} (${item.model}, ${item.provider})`}</div>
+                <div style={{ flexShrink: 0 }}>
                   <VSCodeButton
                     title="Fork this setting"
                     appearance="icon"

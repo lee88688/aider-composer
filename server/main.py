@@ -9,6 +9,7 @@ import os
 import json
 from threading import Event, Thread
 from queue import Queue
+import traceback
 
 @dataclass
 class ChatChunkData:
@@ -44,7 +45,7 @@ def auto_commit(self, edited, context=None):
     # when auto_commits is True, don't block to confirm
     if self.auto_commits:
         return
-    self._on_confirm_ask('auto-commit', list(edited))
+    self._confirm_ask('auto-commit', list(edited))
 
 Coder.auto_commit = auto_commit
 
@@ -131,8 +132,8 @@ class CaptureIO(InputOutput):
         super().__init__(*args, **kwargs)
 
     def tool_output(self, *messages, log_only=False, bold=False):
-        if not log_only:
-            self.lines.append(*messages)
+        if not log_only and messages:  # Only append if there are messages
+            self.lines.extend(messages)
         super().tool_output(*messages, log_only=log_only, bold=bold)
 
     def tool_error(self, message="", strip=True):
@@ -231,6 +232,9 @@ class ChatSessionManager:
     coder: Coder
 
     def __init__(self):
+        self.confirm_ask_event = Event()
+        self.queue = Queue()
+
         model = Model('gpt-4o')
         io = CaptureIO(
             pretty=False,
@@ -256,6 +260,11 @@ class ChatSessionManager:
         self.reference_list = []
         self.extra_config = ChatSessionExtraConfig()
 
+
+        self.confirm_ask_event = Event()
+        self.queue = Queue()
+    
+    
         self.confirm_ask_event = Event()
         self.queue = Queue()
     
@@ -306,7 +315,7 @@ class ChatSessionManager:
             fnames=(item.fs_path for item in self.reference_list if not item.readonly),
             read_only_fnames=(item.fs_path for item in self.reference_list if item.readonly),
             # extra config
-            lint_cmds=parse_lint_cmds(self.extra_config.lint_cmds, self.io),
+            lint_cmds=self.extra_config.lint_cmds and parse_lint_cmds(self.extra_config.lint_cmds, self.io),
             auto_lint=self.extra_config.auto_lint,
             auto_test=self.extra_config.auto_test,
             test_cmd=self.extra_config.test_cmd,
@@ -389,6 +398,7 @@ class ChatSessionManager:
                 self.queue.put(ChatChunkData(event='write', data=data))
 
         except Exception as e:
+            print(traceback.format_exc())
             # send error to client
             error_data = {
                 "error": str(e)

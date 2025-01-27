@@ -61,6 +61,15 @@ function CircleFilledIcon({ color = 'currentColor' }: { color?: string }) {
   );
 }
 
+const confirmAskMap: Record<string, { message: string }> = {
+  'lint-fix': {
+    message: 'Attempt to fix lint errors',
+  },
+  'test-fix': {
+    message: 'Attempt to fix test errors',
+  },
+};
+
 export function ChatStatus() {
   const isGenerating = useChatStore((state) => Boolean(state.current));
   const isGeneratingCode = useChatStore((state) =>
@@ -175,10 +184,11 @@ export function ChatStatus() {
   }
 
   let confirmAsk: ReactNode;
-  if (currentConfirmAsk) {
+  const confirmAskConfig = confirmAskMap[currentConfirmAsk];
+  if (confirmAskConfig) {
     confirmAsk = (
       <div className={statusLine}>
-        <span>Confirm Ask: {currentConfirmAsk}</span>
+        <span>{confirmAskConfig.message}</span>
         <div className="empty"></div>
         <VSCodeButton
           appearance="icon"
@@ -197,6 +207,20 @@ export function ChatStatus() {
       </div>
     );
   }
+
+  const autoCommit =
+    currentConfirmAsk === 'auto-commit' ? (
+      <div className={statusLine}>
+        <span>Waiting for accept/reject files</span>
+        <div className="empty"></div>
+        <RefreshCw
+          size={16}
+          style={{
+            animation: 'spin 2s linear infinite',
+          }}
+        />
+      </div>
+    ) : null;
 
   return (
     <div>
@@ -243,6 +267,7 @@ export function ChatStatus() {
       )}
       {confirmAsk}
       {status}
+      {autoCommit}
     </div>
   );
 }

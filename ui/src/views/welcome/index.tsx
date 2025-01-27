@@ -20,7 +20,7 @@ export default function Welcome() {
           }}
         />
       </div>
-      <div>aider.composer is starting, please wait.</div>
+      <div>Aider Composer is starting, please wait.</div>
     </div>
   );
 }
