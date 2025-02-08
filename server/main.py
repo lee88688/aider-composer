@@ -26,37 +26,42 @@ class ChatChunkData:
     data: Optional[dict] = None
 
 # patch Coder
-def on_data_update(self, fn):
-    self.on_data_update = fn
+# def on_data_update(self, fn):
+#     self.on_data_update = fn
 
-def emit_data_update(self, data):
-    if self.on_data_update:
-        self.on_data_update(data)
+# def emit_data_update(self, data):
+#     if self.on_data_update:
+#         self.on_data_update(data)
 
-def on_confirm_ask(self, fn):
-    self._confirm_ask = fn
+# def on_confirm_ask(self, fn):
+#     self._confirm_ask = fn
 
-Coder.on_data_update = on_data_update # type: ignore
-Coder.emit_data_update = emit_data_update # type: ignore
-Coder.on_confirm_ask = on_confirm_ask # type: ignore
+# def on_auto_commit(self, fn):
+#     self._on_auto_commit = fn
+
+Coder.on_data_update = lambda self: None # type: ignore
+# Coder.emit_data_update = lambda self: None # type: ignore
+Coder.on_confirm_ask = lambda self: None # type: ignore
+Coder.on_auto_commit = lambda self: None # type: ignore
+
 
 def auto_commit(self, edited, context=None):
     print('auto_commit', edited)
+    self.on_auto_commit()
     # when auto_commits is True, don't block to confirm
     if self.auto_commits:
         return
-    self._confirm_ask('auto-commit', list(edited))
+    self.on_confirm_ask('auto-commit', list(edited))
 
 Coder.auto_commit = auto_commit
 
 # patch ArchitectCoder
 original_reply_completed = ArchitectCoder.reply_completed
 def reply_completed(self):
-    self.emit_data_update(ChatChunkData(event='editor-start'))
+    self.on_data_update(ChatChunkData(event='editor-start'))
     result = original_reply_completed(self)
-    self.emit_data_update(ChatChunkData(event='editor-end'))
+    self.on_data_update(ChatChunkData(event='editor-end'))
     return result
-
 
 ArchitectCoder.reply_completed = reply_completed
 
@@ -121,7 +126,7 @@ class CaptureIO(InputOutput):
     lines: List[str]
     error_lines: List[str]
     write_files: Dict[str, str]
-    _confirm_ask: Callable[[str], bool] = lambda _: False
+    on_confirm_ask: Callable[[str], bool] = lambda _: False
 
     def __init__(self, *args, **kwargs):
         self.lines = []
@@ -168,10 +173,7 @@ class CaptureIO(InputOutput):
         write_files = self.write_files
         self.write_files = {}
         return write_files
-    
-    def on_confirm_ask(self, fn):
-        self._confirm_ask = fn
-    
+
     def confirm_ask(
         self,
         question: str,
@@ -194,7 +196,7 @@ class CaptureIO(InputOutput):
             question_type = 'test-fix'
         
         if question_type:
-            res = self._confirm_ask(question)
+            res = self.on_confirm_ask(question)
             return res
 
         return False
@@ -244,7 +246,7 @@ class ChatSessionManager:
             fancy_input=False,
         )
         self.io = io
-        self.io.on_confirm_ask(self._confirm_ask)
+        self.io.on_confirm_ask = self._confirm_ask
 
         self.coder = Coder.create(
             main_model=model,
@@ -274,8 +276,19 @@ class ChatSessionManager:
         self.coder.pretty = False
         # when auto_commits is True, it will set dirty_commits to True
         self.coder.dirty_commits = False
-        self.coder.on_data_update(self.queue.put) # type: ignore
-        self.coder.on_confirm_ask(self._confirm_ask) # type: ignore
+        # callback hooks
+        self.coder.on_data_update = self.queue.put # type: ignore
+        self.coder.on_confirm_ask = self._confirm_ask # type: ignore
+        self.coder.on_auto_commit = self._on_auto_commit # type: ignore
+    
+    def _on_auto_commit(self):
+        write_files = self.io.get_captured_write_files()
+        if write_files:
+            data = {
+                "write": write_files,
+                "auto_commits": self.coder.auto_commits,
+            }
+            self.queue.put(ChatChunkData(event='write', data=data))
 
     def _confirm_ask(self, question: str, data: Any = None):
         self.queue.put(ChatChunkData(event='confirm-ask', data={"type": question, "data": data}))
