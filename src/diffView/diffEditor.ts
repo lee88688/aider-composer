@@ -208,7 +208,6 @@ export class DiffEditorViewManager
           currentChange = lastRemoved;
         }
       } else if (part.added) {
-        lineNumber += part.count!;
         const added: AddedChange = {
           type: 'added',
           line: lineNumber,
@@ -225,12 +224,13 @@ export class DiffEditorViewManager
         } else {
           currentChange = added;
         }
-      } else {
         lineNumber += part.count!;
+      } else {
         if (lastRemoved) {
           currentChange = lastRemoved;
           lastRemoved = undefined;
         }
+        lineNumber += part.count!;
       }
 
       if (currentChange) {
@@ -286,6 +286,82 @@ export class DiffEditorViewManager
       type: 'add',
       path: data.path,
     });
+  }
+
+  private getChangeIndex(
+    editor: vscode.TextEditor,
+    fileChange: { changes: Change[] },
+  ): number {
+    // get change index from cursor position
+    const position = editor.selection.active;
+    const line = position.line;
+
+    for (let i = 0; i < fileChange.changes.length; i++) {
+      const change = fileChange.changes[i];
+      if (change.type === 'added') {
+        if (line >= change.line && line < change.line + change.count) {
+          return i;
+        }
+      } else if (change.type === 'removed') {
+        // the line is already removed, so just one line
+        if (line >= change.line && line < change.line + 1) {
+          return i;
+        }
+      } else {
+        if (
+          line >= change.added.line &&
+          line < change.added.line + change.added.count
+        ) {
+          return i;
+        }
+      }
+    }
+
+    return -1;
+  }
+
+  private async applyChange(
+    uri: string,
+    fileChange: { changes: Change[] },
+    index: number,
+    isAccept: boolean,
+  ) {
+    if (!isAccept) {
+      const edit = new vscode.WorkspaceEdit();
+      const document = await vscode.workspace.openTextDocument(uri);
+    }
+    fileChange.changes.splice(index, 1);
+  }
+
+  private async acceptChange(uri: string, i?: number) {
+    this.outputChannel.debug(`Accept change: ${uri}, ${i}`);
+
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.uri.toString() !== uri) {
+      return;
+    }
+
+    const fileChange = this.fileChangeMap.get(uri);
+    if (!fileChange) {
+      return;
+    }
+
+    let index: number;
+    if (typeof i === 'number') {
+      index = i;
+    } else {
+      index = this.getChangeIndex(editor, fileChange);
+      if (index === -1) {
+        return;
+      }
+    }
+
+    fileChange.changes.splice(index, 1);
+
+    if (fileChange.changes.length === 0) {
+      this.fileChangeMap.delete(uri);
+      await this.closeDiffEditor(uri);
+    }
   }
 
   // close all diff editor with DiffContentProviderId
