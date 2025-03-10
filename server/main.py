@@ -261,14 +261,6 @@ class ChatSessionManager:
         self.diff_format = 'diff'
         self.reference_list = []
         self.extra_config = ChatSessionExtraConfig()
-
-
-        self.confirm_ask_event = Event()
-        self.queue = Queue()
-    
-    
-        self.confirm_ask_event = Event()
-        self.queue = Queue()
     
     def _update_patch_coder(self):
         self.coder.yield_stream = True

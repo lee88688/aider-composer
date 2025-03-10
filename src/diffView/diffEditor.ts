@@ -320,15 +320,37 @@ export class DiffEditorViewManager
     return -1;
   }
 
-  private async applyChange(
-    uri: string,
-    fileChange: { changes: Change[] },
-    index: number,
-    isAccept: boolean,
-  ) {
+  private async applyChange(uriStr: string, index: number, isAccept: boolean) {
+    const fileChange = this.fileChangeMap.get(uriStr);
+    if (!fileChange) {
+      return;
+    }
+
     if (!isAccept) {
+      const uri = vscode.Uri.parse(uriStr);
       const edit = new vscode.WorkspaceEdit();
-      const document = await vscode.workspace.openTextDocument(uri);
+      const change = fileChange.changes[index];
+      if (change.type === 'added') {
+        edit.delete(
+          uri,
+          new vscode.Range(change.line, 0, change.line + change.count, 0),
+        );
+      } else if (change.type === 'removed') {
+        edit.insert(uri, new vscode.Position(change.line, 0), change.value);
+      } else if (change.type === 'modified') {
+        edit.replace(
+          uri,
+          new vscode.Range(
+            change.added.line,
+            0,
+            change.added.line + change.added.count,
+            0,
+          ),
+          change.removed.value,
+        );
+      }
+
+      await vscode.workspace.applyEdit(edit);
     }
     fileChange.changes.splice(index, 1);
   }
@@ -356,7 +378,38 @@ export class DiffEditorViewManager
       }
     }
 
-    fileChange.changes.splice(index, 1);
+    await this.applyChange(uri, index, true);
+
+    if (fileChange.changes.length === 0) {
+      this.fileChangeMap.delete(uri);
+      await this.closeDiffEditor(uri);
+    }
+  }
+
+  private async rejectChange(uri: string, i?: number) {
+    this.outputChannel.debug(`Reject change: ${uri}, ${i}`);
+
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.uri.toString() !== uri) {
+      return;
+    }
+
+    const fileChange = this.fileChangeMap.get(uri);
+    if (!fileChange) {
+      return;
+    }
+
+    let index: number;
+    if (typeof i === 'number') {
+      index = i;
+    } else {
+      index = this.getChangeIndex(editor, fileChange);
+      if (index === -1) {
+        return;
+      }
+    }
+
+    await this.applyChange(uri, index, false);
 
     if (fileChange.changes.length === 0) {
       this.fileChangeMap.delete(uri);

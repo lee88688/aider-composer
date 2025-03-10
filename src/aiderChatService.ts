@@ -241,6 +241,7 @@ export default class AiderChatService {
     this.outputChannel.info('Stopping aider-chat service...');
     this.aiderChatProcess?.kill();
     this.aiderChatProcess = undefined;
+    this.configFileManager.dispose();
   }
 
   get serviceUrl() {
