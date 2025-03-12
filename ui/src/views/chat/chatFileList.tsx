@@ -51,7 +51,10 @@ function FileItem(props: {
       onClick={props.onClick}
       className={props.isEdit ? 'edit' : ''}
     >
-      <span style={{ color: 'var(--vscode-editor-foreground)' }}>
+      <span
+        style={{ color: 'var(--vscode-editor-foreground)' }}
+        title={props.title}
+      >
         {props.name}
       </span>
       <span style={{ color: 'var(--vscode-input-placeholderForeground)' }}>
