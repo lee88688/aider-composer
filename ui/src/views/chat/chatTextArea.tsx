@@ -337,6 +337,10 @@ const ChatEditor = forwardRef<{ sendChat: () => void }>(
             }
             break;
           case 'Enter': {
+            if (event.nativeEvent.isComposing) {
+              // prevent submit while using IME
+              break;
+            }
             event.preventDefault();
 
             if (target) {
