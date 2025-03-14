@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/lee88688/aider-composer/compare/v1.11.0...v1.11.1) (2025-03-14)
+
+
+### Bug Fixes
+
+* prevent submit while using IME ([#82](https://github.com/lee88688/aider-composer/issues/82)) ([f3abab0](https://github.com/lee88688/aider-composer/commit/f3abab0c24a9ddcf82a89f393b404a059bc87a66))
+
 # [1.11.0](https://github.com/lee88688/aider-composer/compare/v1.10.0...v1.11.0) (2025-01-21)
 
 
