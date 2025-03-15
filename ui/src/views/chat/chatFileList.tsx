@@ -197,6 +197,10 @@ function FileSearchList() {
                     : 'transparent',
                   opacity: selected ? 0.6 : 1,
                 }}
+                contentStyle={{
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
               >
                 <Checkbox.Root checked={selected} className={checkboxCss}>
                   <Checkbox.Indicator className="CheckboxIndicator">
