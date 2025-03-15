@@ -3,6 +3,8 @@ import styled from '@emotion/styled';
 import { css } from '@emotion/css';
 import { MouseEventHandler, useMemo, useState } from 'react';
 import * as Popover from '@radix-ui/react-popover';
+import * as Checkbox from '@radix-ui/react-checkbox';
+import { CheckIcon } from '@radix-ui/react-icons';
 import { List, ListItem } from '../../components/list';
 import { getOpenedFiles, searchFile } from '../../commandApi';
 import { useDebounceEffect } from 'ahooks';
@@ -103,6 +105,19 @@ const listCss = css({
   },
 });
 
+const checkboxCss = css({
+  all: 'unset',
+  backgroundColor: 'var(--vscode-checkbox-background)',
+  width: 16,
+  height: 16,
+  borderRadius: 4,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: '8px',
+  cursor: 'pointer',
+});
+
 // when empty input, show opened files in editor
 // when input, show search result
 function FileSearchList() {
@@ -110,6 +125,21 @@ function FileSearchList() {
   const [query, setQuery] = useState('');
 
   const addChatReference = useChatStore((state) => state.addChatReference);
+  const removeChatReference = useChatStore(
+    (state) => state.removeChatReference,
+  );
+  const chatReferenceList = useChatStore((state) => state.chatReferenceList);
+  const currentEditorReference = useChatStore(
+    (state) => state.currentEditorReference,
+  );
+
+  const isCurrentFile = (file: ChatReferenceFileItem) => {
+    return file.id === currentEditorReference?.id;
+  };
+
+  const isFileSelected = (file: ChatReferenceFileItem) => {
+    return chatReferenceList.some((ref) => ref.path === file.path);
+  };
 
   useDebounceEffect(
     () => {
@@ -125,7 +155,7 @@ function FileSearchList() {
       });
     },
     [query],
-    { wait: 500 },
+    { wait: 150 },
   );
 
   return (
@@ -148,16 +178,46 @@ function FileSearchList() {
             background: 'transparent',
           }}
         >
-          {references.map((file) => (
-            <ListItem
-              key={file.path}
-              title={file.path}
-              secondaryText={file.path}
-              onClick={() => addChatReference({ ...file, readonly: true })}
-            >
-              {file.name}
-            </ListItem>
-          ))}
+          {references.map((file) => {
+            const selected = isFileSelected(file);
+            const currentFileItem = isCurrentFile(file);
+            return (
+              <ListItem
+                key={file.path}
+                title={file.path}
+                secondaryText={file.path}
+                onClick={() =>
+                  selected
+                    ? removeChatReference(file)
+                    : addChatReference({ ...file, readonly: true })
+                }
+                style={{
+                  backgroundColor: selected
+                    ? 'var(--vscode-quickInputList-focusBackground)'
+                    : 'transparent',
+                  opacity: selected ? 0.6 : 1,
+                }}
+              >
+                <Checkbox.Root checked={selected} className={checkboxCss}>
+                  <Checkbox.Indicator className="CheckboxIndicator">
+                    <CheckIcon style={{ width: 12, height: 12 }} />
+                  </Checkbox.Indicator>
+                </Checkbox.Root>
+                <span>{file.name}</span>
+                {currentFileItem && (
+                  <span
+                    style={{
+                      color: 'var(--vscode-input-placeholderForeground)',
+                      marginLeft: 4,
+                      fontSize: 12,
+                    }}
+                  >
+                    current file
+                  </span>
+                )}
+              </ListItem>
+            );
+          })}
         </List>
       </ScrollArea>
     </div>
@@ -214,8 +274,8 @@ export default function ChatFileList() {
             align="start"
             sideOffset={2}
             style={{
-              minWidth: 'min(calc(100vw - 40px), 300px)',
-              maxWidth: '280px',
+              minWidth: 'min(calc(100vw - 40px), 350px)',
+              maxWidth: '500px',
               boxShadow: '0 0 8px 2px var(--vscode-widget-shadow)',
             }}
           >

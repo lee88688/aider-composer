@@ -17,7 +17,9 @@ export function ListItem(
       title={props.title}
       onClick={props.onClick}
     >
-      <div style={{ flexGrow: 1 }}>{props.children}</div>
+      <div style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+        {props.children}
+      </div>
       <div className="secondary-text">{props.secondaryText}</div>
     </li>
   );
