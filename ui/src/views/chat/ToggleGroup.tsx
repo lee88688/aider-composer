@@ -1,4 +1,5 @@
 import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
+
 import { css } from '@emotion/css';
 
 const toggleGroupStyles = css({
@@ -20,6 +21,7 @@ const toggleGroupItemStyles = css({
   alignItems: 'center',
   justifyContent: 'center',
   flex: 1,
+  cursor: 'pointer',
 
   '&[data-state="on"]': {
     backgroundColor: 'var(--vscode-button-background)',
