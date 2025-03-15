@@ -6,6 +6,7 @@ export function ListItem(
     className?: string;
     secondaryText?: string;
     style?: React.CSSProperties;
+    contentStyle?: React.CSSProperties;
     title?: string;
     onClick?: () => void;
   }>,
@@ -17,7 +18,7 @@ export function ListItem(
       title={props.title}
       onClick={props.onClick}
     >
-      <div style={{ flexGrow: 1 }}>{props.children}</div>
+      <div style={{ flexGrow: 1, ...props.contentStyle }}>{props.children}</div>
       <div className="secondary-text">{props.secondaryText}</div>
     </li>
   );
