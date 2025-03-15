@@ -274,8 +274,7 @@ export default function ChatFileList() {
             align="start"
             sideOffset={2}
             style={{
-              minWidth: 'min(calc(100vw - 40px), 350px)',
-              maxWidth: '500px',
+              width: 'min(max(calc(100vw - 50px), 250px), 400px)',
               boxShadow: '0 0 8px 2px var(--vscode-widget-shadow)',
             }}
           >
