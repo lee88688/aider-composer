@@ -212,7 +212,7 @@ function FileSearchList() {
                       fontSize: 12,
                     }}
                   >
-                    current file
+                    (current file)
                   </span>
                 )}
               </ListItem>
