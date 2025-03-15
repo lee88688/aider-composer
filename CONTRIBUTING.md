@@ -46,5 +46,5 @@ After installing npm dependencies, run the following:
 
 ```bash
 npm run compile
-npm run build
+npm run build-ui
 ```
