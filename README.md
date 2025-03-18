@@ -6,6 +6,14 @@ Aider Composer is a VSCode extension that integrates [Aider](https://github.com/
 
 It is highly recommended to read the [Requirements](#requirements) and [Extension Settings](#extension-settings) sections for initial configuration, otherwise the extension may not work correctly.
 
+## Support & Donations
+
+If you find this project helpful, consider supporting me to keep it alive and improving:
+
+- [**ko-fi**](https://ko-fi.com/jimmielee)
+
+Your support is greatly appreciated and helps me maintain and improve this project. Thank you! 🎉
+
 ## 🎉🎉News🎉🎉
 
 - Support [VSCode Remote](#vscode-remote)
