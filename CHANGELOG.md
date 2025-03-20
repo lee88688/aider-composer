@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/lee88688/aider-composer/compare/v1.11.1...v1.12.0) (2025-03-20)
+
+
+### Features
+
+* update FileSearchList UI ([#84](https://github.com/lee88688/aider-composer/issues/84)) ([ce715d1](https://github.com/lee88688/aider-composer/commit/ce715d1f7b37d1cfb91c11e6917968373d8fdd0b))
+
 ## [1.11.1](https://github.com/lee88688/aider-composer/compare/v1.11.0...v1.11.1) (2025-03-14)
 
 
